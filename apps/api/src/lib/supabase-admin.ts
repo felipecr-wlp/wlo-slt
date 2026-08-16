@@ -1,0 +1,15 @@
+import { createClient } from '@supabase/supabase-js';
+
+// Cliente server-side con service_role. NUNCA se expone al navegador.
+// Devuelve null cuando las env faltan → las rutas deben retornar mock data (demo-safe).
+export function getSupabaseAdmin() {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if (!url || !key) return null;
+
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  }) as any;
+}
+
+export type SupabaseAdmin = NonNullable<ReturnType<typeof getSupabaseAdmin>>;

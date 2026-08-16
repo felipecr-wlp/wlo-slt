@@ -3,4 +3,13 @@ node_modules
 .env.local
 .env*.local
 .next/
-.dev.log
+.turbo/
+dist/
+apps/*/dist/
+apps/*/node_modules/
+packages/*/node_modules/
+*.log
+
+*.err
+tmp-*.json
+tmp-*

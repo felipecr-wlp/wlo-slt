@@ -1,22 +1,23 @@
 {
   "name": "wlo-slt",
-  "version": "1.0.0",
   "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev -p 3002",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2",
-    "lucide-react": "^0.374.0",
-    "next": "14.2.4",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "supabase db reset --linked",
+    "migration:new": "supabase migration new",
+    "tracker:build": "pnpm --filter=tracker build"
   },
   "devDependencies": {
-    "autoprefixer": "^10",
-    "postcss": "^8",
-    "tailwindcss": "^3"
+    "supabase": "^2.11.0",
+    "turbo": "^2.10.10"
+  },
+  "engines": {
+    "packageManager": "pnpm@9.x"
   }
 }
