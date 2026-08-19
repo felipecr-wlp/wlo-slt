@@ -1,19 +1,5 @@
-// Capa de datos server-side. Demo-safe: usa Supabase cuando las env están
-// configuradas, si no retorna mock data. Nunca lanza → el dashboard siempre renderiza.
 import { getSupabaseAdmin } from './supabase-admin';
 import { z } from 'zod';
-import { MOCK_STATS,
-  MOCK_EVENTS,
-  MOCK_FORMS,
-  MOCK_SUBMISSIONS,
-  MOCK_SHORTLINKS,
-  MOCK_FUNNELS,
-  MOCK_EVENTS_BY_TYPE,
-  MOCK_IP_RULES,
-  MOCK_INTEGRATIONS,
-} from './mockData';
-import { getRecentSubmissions, listForms, getForm, addSubmission, addSubmissions, clearSubmissions } from './demoStore';
-import { getRecentEvents, clearEvents, addEvent } from './ingestBuffer';
 import { trackEventSchema, shortLinkSchema } from './validators';
 import type { EventRow, FormSubmission, ShortLink, Form } from '@slt/shared-types';
 
@@ -25,150 +11,115 @@ function sb() {
   }
 }
 
-export async function getStats(): Promise<typeof MOCK_STATS> {
-  const client = sb();
-  if (!client) return MOCK_STATS;
-  try {
-    const [events, sessions, forms, submissions, redirects] = await Promise.all([
-      client.from('events').select('*', { count: 'exact', head: true }),
-      client.from('sessions').select('*', { count: 'exact', head: true }),
-      client.from('forms').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-      client.from('form_submissions').select('*', { count: 'exact', head: true }),
-      client.from('short_links').select('*', { count: 'exact', head: true }),
-    ]);
-    return {
-      events: events.count ?? 0,
-      sessions: sessions.count ?? 0,
-      forms: forms.count ?? 0,
-      submissions: submissions.count ?? 0,
-      redirects: redirects.count ?? 0,
-      bounceRate: 54,
-      avgSessionSec: 186,
-    };
-  } catch {
-    return MOCK_STATS;
-  }
+function requireDb() {
+  const c = sb();
+  if (!c) throw new Error('Supabase no está configurado. Configura NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.');
+  return c;
+}
+
+export async function getStats() {
+  const client = requireDb();
+  const [events, sessions, forms, submissions, redirects] = await Promise.all([
+    client.from('events').select('*', { count: 'exact', head: true }),
+    client.from('sessions').select('*', { count: 'exact', head: true }),
+    client.from('forms').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    client.from('form_submissions').select('*', { count: 'exact', head: true }),
+    client.from('short_links').select('*', { count: 'exact', head: true }),
+  ]);
+  return {
+    events: events.count ?? 0,
+    sessions: sessions.count ?? 0,
+    forms: forms.count ?? 0,
+    submissions: submissions.count ?? 0,
+    redirects: redirects.count ?? 0,
+    bounceRate: 54,
+    avgSessionSec: 186,
+  };
 }
 
 export async function getEvents(limit = 50): Promise<EventRow[]> {
-  const client = sb();
-  if (!client) return MOCK_EVENTS.slice(0, limit);
-  try {
-    const { data, error } = await client
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (error) return MOCK_EVENTS.slice(0, limit);
-    return data as EventRow[];
-  } catch {
-    return MOCK_EVENTS.slice(0, limit);
-  }
+  const client = requireDb();
+  const { data, error } = await client
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as EventRow[];
 }
 
 export async function getForms(): Promise<Form[]> {
-  const client = sb();
-  if (!client) {
-    const m = new Map(MOCK_FORMS.map((f) => [f.id, f]));
-    for (const f of listForms()) m.set(f.id, f);
-    return Array.from(m.values());
-  }
-  try {
-    const { data, error } = await client
-      .from('forms')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      const m = new Map(MOCK_FORMS.map((f) => [f.id, f]));
-      for (const f of listForms()) m.set(f.id, f);
-      return Array.from(m.values());
-    }
-    return data as Form[];
-  } catch {
-    const m = new Map(MOCK_FORMS.map((f) => [f.id, f]));
-    for (const f of listForms()) m.set(f.id, f);
-    return Array.from(m.values());
-  }
+  const client = requireDb();
+  const { data, error } = await client
+    .from('forms')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Form[];
 }
 
 export async function getFormById(id: string): Promise<Form | null> {
-  const client = sb();
-  const notFound = (def: Form | null) =>
-    getForm(id) ?? MOCK_FORMS.find((f) => f.id === id) ?? def ?? null;
-  if (!client) return notFound(null);
-  try {
-    const { data, error } = await client.from('forms').select('*').eq('id', id).single();
-    if (error) return notFound(null);
-    return data as Form;
-  } catch {
-    return notFound(null);
-  }
+  const client = requireDb();
+  const { data, error } = await client.from('forms').select('*').eq('id', id).single();
+  if (error) throw error;
+  return data as Form;
 }
 
 export async function getSubmissions(limit = 50): Promise<FormSubmission[]> {
-  const client = sb();
-  if (!client) {
-    return [...getRecentSubmissions(limit), ...MOCK_SUBMISSIONS].slice(0, limit);
-  }
-  try {
-    const { data, error } = await client
-      .from('form_submissions')
-      .select('*, forms(title)')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    if (error) return [...getRecentSubmissions(limit), ...MOCK_SUBMISSIONS].slice(0, limit);
-    return data as unknown as FormSubmission[];
-  } catch {
-    return [...getRecentSubmissions(limit), ...MOCK_SUBMISSIONS].slice(0, limit);
-  }
+  const client = requireDb();
+  const { data, error } = await client
+    .from('form_submissions')
+    .select('*, forms(title)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as FormSubmission[];
 }
 
 export async function getShortLinks(): Promise<ShortLink[]> {
-  const client = sb();
-  if (!client) return MOCK_SHORTLINKS;
-  try {
-    const { data, error } = await client.from('short_links').select('*').order('created_at', { ascending: false });
-    if (error) return MOCK_SHORTLINKS;
-    return data as ShortLink[];
-  } catch {
-    return MOCK_SHORTLINKS;
-  }
+  const client = requireDb();
+  const { data, error } = await client.from('short_links').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ShortLink[];
 }
 
 export async function getShortLinkBySlug(slug: string): Promise<ShortLink | null> {
-  const client = sb();
-  if (!client) return MOCK_SHORTLINKS.find((l) => l.slug === slug) ?? null;
-  try {
-    const { data, error } = await client.from('short_links').select('*').eq('slug', slug).single();
-    if (error) return MOCK_SHORTLINKS.find((l) => l.slug === slug) ?? null;
-    return data as ShortLink;
-  } catch {
-    return MOCK_SHORTLINKS.find((l) => l.slug === slug) ?? null;
-  }
+  const client = requireDb();
+  const { data, error } = await client.from('short_links').select('*').eq('slug', slug).single();
+  if (error) throw error;
+  return data as ShortLink;
 }
 
 export async function getFunnels() {
-  const client = sb();
-  if (!client) return MOCK_FUNNELS;
-  try {
-    const { data, error } = await client.from('events').select('event_type, created_at');
-    if (error) return MOCK_FUNNELS;
-    return data;
-  } catch {
-    return MOCK_FUNNELS;
+  const client = requireDb();
+  const { data, error } = await client.from('events').select('event_type, created_at');
+  if (error) throw error;
+  return data;
+}
+
+export async function getEventsByType() {
+  const client = requireDb();
+  const { data, error } = await client.from('events').select('event_type');
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of (data ?? []) as { event_type: string }[]) {
+    counts[row.event_type] = (counts[row.event_type] || 0) + 1;
   }
+  return Object.entries(counts).map(([name, value]) => ({ name, value }));
 }
 
-export function getEventsByType() {
-  return MOCK_EVENTS_BY_TYPE;
+export async function getIpRules() {
+  const client = requireDb();
+  const { data, error } = await client.from('ip_rules').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as any[];
 }
 
-export function getIpRules() {
-  return MOCK_IP_RULES;
-}
-
-export function getIntegrations() {
-  return MOCK_INTEGRATIONS;
+export async function getIntegrations() {
+  const client = requireDb();
+  const { data, error } = await client.from('integrations').select('*');
+  if (error) throw error;
+  return (data ?? []) as any[];
 }
 
 function toEventRow(e: { id: string; session_id: string; type: string; element_id?: string; url: string; referrer?: string; country?: string; device_type?: string; timestamp?: string }): EventRow {
@@ -187,42 +138,26 @@ function toEventRow(e: { id: string; session_id: string; type: string; element_i
 
 export async function searchEvents(filter: { url?: string; type?: string; limit?: number }): Promise<EventRow[]> {
   const limit = filter.limit ?? 50;
-  const client = sb();
-  if (!client) {
-    return getRecentEvents(limit * 8).map(toEventRow).filter((e) => {
-      if (filter.url && !(e.url || '').toLowerCase().includes(filter.url!.toLowerCase())) return false;
-      if (filter.type && e.event_type !== filter.type) return false;
-      return true;
-    }).slice(0, limit);
-  }
-  try {
-    let q = client.from('events').select('id,session_id,event_type,element_id,url,referrer,country,city,device_type,created_at');
-    if (filter.url) q = (q as any).ilike('url', `%${filter.url}%`);
-    if (filter.type) q = (q as any).eq('event_type', filter.type);
-    const { data, error } = await q.order('created_at', { ascending: false }).limit(limit);
-    if (error) return [];
-    return (data ?? []) as EventRow[];
-  } catch {
-    return [];
-  }
+  const client = requireDb();
+  let q = client.from('events').select('id,session_id,event_type,element_id,url,referrer,country,city,device_type,created_at');
+  if (filter.url) q = (q as any).ilike('url', `%${filter.url}%`);
+  if (filter.type) q = (q as any).eq('event_type', filter.type);
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return (data ?? []) as EventRow[];
 }
 
 const CLEARABLE = ['events', 'sessions', 'form_submissions', 'short_links', 'forms', 'ip_rules'];
-export async function clearDataTable(table: string): Promise<{ count: number; mode: 'supabase' | 'demo' }> {
+export async function clearDataTable(table: string): Promise<{ count: number }> {
   if (!CLEARABLE.includes(table)) throw new Error(`table not allowed: ${table}`);
-  const client = sb();
-  if (!client) {
-    if (table === 'events') { const n = clearEvents(); return { count: n, mode: 'demo' }; }
-    if (table === 'form_submissions') { const n = clearSubmissions(); return { count: n, mode: 'demo' }; }
-    return { count: 0, mode: 'demo' };
-  }
+  const client = requireDb();
   const { data, error } = await client.from(table).select('id');
   if (error) throw error;
   const ids = (data ?? []).map((r: any) => r.id);
-  if (ids.length === 0) return { count: 0, mode: 'supabase' };
+  if (ids.length === 0) return { count: 0 };
   const { error: de } = await client.from(table).delete().in('id', ids);
   if (de) throw de;
-  return { count: ids.length, mode: 'supabase' };
+  return { count: ids.length };
 }
 
 export async function exportTable(type: 'events' | 'submissions' | 'forms' | 'short_links'): Promise<{ rows: any[]; format: string; count: number }> {
@@ -276,26 +211,7 @@ const importEventSchema = z.object({
 export async function importRows(type: 'events' | 'submissions' | 'short_links', rows: any[]): Promise<{ imported: number; errors: string[] }> {
   const errors: string[] = [];
   let imported = 0;
-  const client = sb();
-  if (!client) {
-    for (const r of rows) {
-      try {
-        if (type === 'events') {
-          const parsed = importEventSchema.parse(r);
-          const e = { ...parsed, url: parsed.url };
-          addEvent(e as any);
-        } else if (type === 'submissions') {
-          addSubmission(r as FormSubmission);
-        } else if (type === 'short_links') {
-          shortLinkSchema.parse(r);
-        }
-        imported++;
-      } catch (e: any) {
-        errors.push(e?.message || String(e));
-      }
-    }
-    return { imported, errors };
-  }
+  const client = requireDb();
   for (const r of rows) {
     try {
       let tbl: string; let payload: any;
