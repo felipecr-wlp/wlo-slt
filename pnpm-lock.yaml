@@ -7,19 +7,10 @@ settings:
 importers:
 
   .:
-    devDependencies:
-      supabase:
-        specifier: ^2.11.0
-        version: 2.114.0
-      turbo:
-        specifier: ^2.10.10
-        version: 2.10.10
-
-  apps/api:
     dependencies:
       '@slt/shared-types':
         specifier: workspace:*
-        version: link:../../packages/shared-types
+        version: link:packages/shared-types
       '@supabase/supabase-js':
         specifier: ^2.44.0
         version: 2.112.3
@@ -75,9 +66,15 @@ importers:
       postcss:
         specifier: ^8
         version: 8.5.26
+      supabase:
+        specifier: ^2.11.0
+        version: 2.114.0
       tailwindcss:
         specifier: ^3.4.0
         version: 3.4.19
+      turbo:
+        specifier: ^2.10.10
+        version: 2.10.10
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
