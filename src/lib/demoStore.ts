@@ -23,3 +23,13 @@ export function addSubmission(s: FormSubmission): FormSubmission {
 export function getRecentSubmissions(limit = 50): FormSubmission[] {
   return submissions.slice(0, limit);
 }
+
+export function clearSubmissions(): number {
+  const n = submissions.length;
+  submissions.length = 0;
+  return n;
+}
+
+export function addSubmissions(list: FormSubmission[]): void {
+  for (const s of list) addSubmission(s);
+}

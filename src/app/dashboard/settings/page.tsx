@@ -35,6 +35,7 @@ export default function SettingsPage() {
           <pre className="overflow-x-auto rounded-md bg-gray-900 p-4 text-sm text-gray-100">
 {`<script src="https://wlo-slt.vercel.app/tracker.js"
   data-site-id="misitio"
+  data-endpoint="${endpoint}"
   data-auto-init="true"></script>`}
           </pre>
         </CardContent>

@@ -3,7 +3,7 @@ export interface TrackEvent {
   site_id: string;
   session_id: string;
   fingerprint: string;
-  type: 'pageview' | 'form_submit' | 'click' | 'scroll' | 'custom' | 'session_start' | 'session_end';
+  type: 'pageview' | 'form_submit' | 'click' | 'scroll' | 'conversion' | 'copy' | 'custom' | 'session_start' | 'session_end';
   event_name?: string;
   element_id?: string;
   url: string;

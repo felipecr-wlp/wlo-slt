@@ -5,7 +5,7 @@ export const trackEventSchema = z.object({
   site_id: z.string().min(1),
   session_id: z.string().min(1),
   fingerprint: z.string().min(1),
-  type: z.enum(['pageview', 'form_submit', 'click', 'scroll', 'custom', 'session_start', 'session_end']),
+  type: z.enum(['pageview', 'form_submit', 'click', 'scroll', 'conversion', 'copy', 'custom', 'session_start', 'session_end']),
   event_name: z.string().optional(),
   element_id: z.string().optional(),
   url: z.string().url(),

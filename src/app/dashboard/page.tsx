@@ -6,6 +6,7 @@ import { RedirectsOverview } from '@/components/dashboard/RedirectsOverview';
 import { FunnelChart } from '@/components/dashboard/FunnelChart';
 import { EventTypeChart } from '@/components/dashboard/EventTypeChart';
 import { RealtimeFeed } from '@/components/dashboard/RealtimeFeed';
+import { DataManagement } from '@/components/dashboard/DataManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata = { title: 'Dashboard | wlo-slt' };
@@ -60,6 +61,8 @@ export default async function DashboardPage() {
           <RealtimeFeed />
         </CardContent>
       </Card>
+
+      <DataManagement />
     </div>
   );
 }
