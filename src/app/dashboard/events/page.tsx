@@ -2,6 +2,7 @@
 import { EventsTable } from '@/components/dashboard/EventsTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Eventos | wlo-slt' };
 
 export default async function EventsPage({ searchParams }: { searchParams: { type?: string } }) {

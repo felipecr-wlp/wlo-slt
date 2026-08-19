@@ -9,6 +9,7 @@ import { RealtimeFeed } from '@/components/dashboard/RealtimeFeed';
 import { DataManagement } from '@/components/dashboard/DataManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Dashboard | wlo-slt' };
 
 export default async function DashboardPage() {

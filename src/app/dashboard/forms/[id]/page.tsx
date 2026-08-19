@@ -3,6 +3,7 @@ import { FormBuilder } from '@/components/forms/FormBuilder';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Formulario | wlo-slt' };
 
 export default async function FormPage({ params }: { params: { id: string } }) {
