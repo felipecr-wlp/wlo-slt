@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Trash2, ExternalLink } from 'lucide-react';
 import type { ShortLink } from '@slt/shared-types';
 
 export default function RedirectsPage() {
+  const router = useRouter();
   const [links, setLinks] = useState<ShortLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [slug, setSlug] = useState('');
@@ -53,6 +55,7 @@ export default function RedirectsPage() {
     if (!confirm('Eliminar redirect?')) return;
     await fetch(`/api/redirects/${s}`, { method: 'DELETE' });
     setLinks(links.filter((l) => l.slug !== s));
+    router.refresh();
   };
 
   return (
