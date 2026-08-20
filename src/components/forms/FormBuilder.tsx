@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, Label, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Form, FormField } from '@slt/shared-types';
 
 export function FormBuilder({ form }: { form: Form }) {
+  const router = useRouter();
   const [title, setTitle] = useState(form.title);
   const [groupName, setGroupName] = useState(form.group_name);
   const [status, setStatus] = useState(form.status);
@@ -17,6 +19,34 @@ export function FormBuilder({ form }: { form: Form }) {
   const [fields, setFields] = useState<Array<FormField>>(form.fields || []);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [dirty, setDirty] = useState(false);
+  const savedRef = useRef(false);
+
+  const markDirty = useCallback(() => { if (!savedRef.current) setDirty(true); }, []);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirty && !savedRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (!dirty || savedRef.current) return;
+    const handler = (e: PopStateEvent) => {
+      if (!confirm('Tienes cambios sin guardar. ¿Salir de todos modos?')) {
+        e.preventDefault();
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [dirty]);
 
   const save = () => {
     setSaving(true);
@@ -42,6 +72,10 @@ export function FormBuilder({ form }: { form: Form }) {
       .then((d) => {
         setSaving(false);
         setMsg(d.error ? `Error: ${d.error}` : 'Guardado ok');
+        if (!d.error) {
+          savedRef.current = true;
+          setDirty(false);
+        }
       })
       .catch(() => setSaving(false));
   };
@@ -61,13 +95,13 @@ export function FormBuilder({ form }: { form: Form }) {
       <Card>
         <CardHeader><CardTitle>General</CardTitle></CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <div><Label>Titulo</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-          <div><Label>Grupo</Label><Input value={groupName} onChange={(e) => setGroupName(e.target.value)} /></div>
+          <div><Label>Titulo</Label><Input value={title} onChange={(e) => { setTitle(e.target.value); markDirty(); }} /></div>
+          <div><Label>Grupo</Label><Input value={groupName} onChange={(e) => { setGroupName(e.target.value); markDirty(); }} /></div>
           <div className="flex items-end">
             <Label className="mb-1 block">Status</Label>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as Form['status'])}
+              onChange={(e) => { setStatus(e.target.value as Form['status']); markDirty(); }}
               className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 dark:bg-gray-900"
             >
               <option value="active">Activo</option>
@@ -89,7 +123,7 @@ export function FormBuilder({ form }: { form: Form }) {
                 <Label>Tipo</Label>
                 <select
                   value={f.type}
-                  onChange={(e) => updateField(i, { type: e.target.value as FormField['type'] })}
+                  onChange={(e) => { updateField(i, { type: e.target.value as FormField['type'] }); markDirty(); }}
                   className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 dark:bg-gray-900"
                 >
                   <option value="text">Texto</option>
@@ -101,10 +135,10 @@ export function FormBuilder({ form }: { form: Form }) {
                   <option value="hidden">Hidden</option>
                 </select>
               </div>
-              <div><Label>Label</Label><Input value={f.label} onChange={(e) => updateField(i, { label: e.target.value })} /></div>
-              <div><Label>Name</Label><Input value={f.name} onChange={(e) => updateField(i, { name: e.target.value })} /></div>
+              <div><Label>Label</Label><Input value={f.label} onChange={(e) => { updateField(i, { label: e.target.value }); markDirty(); }} /></div>
+              <div><Label>Name</Label><Input value={f.name} onChange={(e) => { updateField(i, { name: e.target.value }); markDirty(); }} /></div>
               <div className="flex items-center h-10 mt-6 gap-2">
-                <input type="checkbox" checked={!!f.required} onChange={(e) => updateField(i, { required: e.target.checked })} />
+                <input type="checkbox" checked={!!f.required} onChange={(e) => { updateField(i, { required: e.target.checked }); markDirty(); }} />
                 <Label className="mb-0">Required</Label>
               </div>
               <div><Button variant="ghost" onClick={() => removeField(i)}>x</Button></div>
@@ -118,12 +152,12 @@ export function FormBuilder({ form }: { form: Form }) {
         <CardHeader><CardTitle>Notificacion por email</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <label className="flex items-center gap-2">
-            <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+            <input type="checkbox" checked={notify} onChange={(e) => { setNotify(e.target.checked); markDirty(); }} />
             Enviar notificacion
           </label>
-          <div><Label>Para</Label><Input value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="ventas@ejemplo.com" /></div>
-          <div><Label>Asunto</Label><Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} /></div>
-          <div><Label>Plantilla HTML</Label><Textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={5} /></div>
+          <div><Label>Para</Label><Input value={emailTo} onChange={(e) => { setEmailTo(e.target.value); markDirty(); }} placeholder="ventas@ejemplo.com" /></div>
+          <div><Label>Asunto</Label><Input value={emailSubject} onChange={(e) => { setEmailSubject(e.target.value); markDirty(); }} /></div>
+          <div><Label>Plantilla HTML</Label><Textarea value={emailBody} onChange={(e) => { setEmailBody(e.target.value); markDirty(); }} rows={5} /></div>
         </CardContent>
       </Card>
 
