@@ -11,7 +11,7 @@ export function middleware(req: NextRequest) {
   res.headers.set('X-Frame-Options', 'SAMEORIGIN');
 
   const isApi = req.nextUrl.pathname.startsWith('/api/');
-  const isTracker = req.nextUrl.pathname.startsWith('/api/ingest') || req.nextUrl.pathname.startsWith('/api/forms');
+  const isTracker = req.nextUrl.pathname.startsWith('/api/ingest') || req.nextUrl.pathname.startsWith('/api/forms') || req.nextUrl.pathname.startsWith('/api/webhooks');
 
   if (isTracker) {
     res.headers.set('Access-Control-Allow-Origin', '*');
