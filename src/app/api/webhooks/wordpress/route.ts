@@ -4,37 +4,37 @@ import { z } from 'zod';
 const WP_KEY = process.env.WORDPRESS_WEBHOOK_KEY || '';
 
 const wpPayloadSchema = z.object({
-  event: z.string().min(1).default('form_submit'),
-  form_id: z.string().optional(),
-  page_url: z.string().url().optional(),
-  referrer: z.string().optional(),
-  fields: z.record(z.unknown()).default({}),
+  event: z.string().min(1).nullable().default('form_submit'),
+  form_id: z.string().nullable().optional(),
+  page_url: z.string().url().nullable().optional(),
+  referrer: z.string().nullable().optional(),
+  fields: z.record(z.unknown()).nullable().default({}),
   utm: z.object({
-    utm_source: z.string().optional(),
-    utm_medium: z.string().optional(),
-    utm_campaign: z.string().optional(),
-    utm_content: z.string().optional(),
-    utm_term: z.string().optional(),
-  }).default({}),
+    utm_source: z.string().nullable().optional(),
+    utm_medium: z.string().nullable().optional(),
+    utm_campaign: z.string().nullable().optional(),
+    utm_content: z.string().nullable().optional(),
+    utm_term: z.string().nullable().optional(),
+  }).nullable().default({}),
   click_ids: z.object({
-    gclid: z.string().optional(),
-    fbclid: z.string().optional(),
-    msclkid: z.string().optional(),
-    li_fat_id: z.string().optional(),
-    ttclid: z.string().optional(),
-  }).default({}),
+    gclid: z.string().nullable().optional(),
+    fbclid: z.string().nullable().optional(),
+    msclkid: z.string().nullable().optional(),
+    li_fat_id: z.string().nullable().optional(),
+    ttclid: z.string().nullable().optional(),
+  }).nullable().default({}),
   technical: z.object({
-    browser: z.string().optional(),
-    os: z.string().optional(),
-    device_type: z.enum(['desktop', 'mobile', 'tablet']).optional(),
-    screen_res: z.string().optional(),
-    country: z.string().optional(),
-    city: z.string().optional(),
-  }).default({}),
-  site_id: z.string().optional(),
-  session_id: z.string().optional(),
-  fingerprint: z.string().optional(),
-  timestamp: z.string().optional(),
+    browser: z.string().nullable().optional(),
+    os: z.string().nullable().optional(),
+    device_type: z.enum(['desktop', 'mobile', 'tablet']).nullable().optional(),
+    screen_res: z.string().nullable().optional(),
+    country: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+  }).nullable().default({}),
+  site_id: z.string().nullable().optional(),
+  session_id: z.string().nullable().optional(),
+  fingerprint: z.string().nullable().optional(),
+  timestamp: z.string().nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -81,29 +81,32 @@ export async function POST(req: Request) {
   const sessionId = data.session_id || `wp-${crypto.randomUUID?.() || Date.now()}`;
   const fingerprint = data.fingerprint || `wp-${data.site_id || 'default'}`;
   const ts = data.timestamp || new Date().toISOString();
+  const utm = data.utm || {};
+  const clicks = data.click_ids || {};
+  const tech = data.technical || {};
 
   try {
     const { error } = await client.from('events').insert({
       session_id: sessionId,
       event_type: data.event,
       element_id: data.form_id || null,
-      url: data.page_url || `https://wordpress.webhook`,
+      url: data.page_url || 'https://wordpress.webhook',
       referrer: data.referrer || null,
-      utm_source: data.utm.utm_source || null,
-      utm_medium: data.utm.utm_medium || null,
-      utm_campaign: data.utm.utm_campaign || null,
-      utm_content: data.utm.utm_content || null,
-      utm_term: data.utm.utm_term || null,
-      gclid: data.click_ids.gclid || null,
-      fbclid: data.click_ids.fbclid || null,
+      utm_source: utm.utm_source || null,
+      utm_medium: utm.utm_medium || null,
+      utm_campaign: utm.utm_campaign || null,
+      utm_content: utm.utm_content || null,
+      utm_term: utm.utm_term || null,
+      gclid: clicks.gclid || null,
+      fbclid: clicks.fbclid || null,
       fingerprint,
-      country: data.technical.country || null,
-      city: data.technical.city || null,
-      device_type: data.technical.device_type || null,
-      browser: data.technical.browser || null,
-      os: data.technical.os || null,
-      screen_res: data.technical.screen_res || null,
-      payload: { fields: data.fields, source: 'wordpress', ...data.utm, ...data.click_ids },
+      country: tech.country || null,
+      city: tech.city || null,
+      device_type: tech.device_type || null,
+      browser: tech.browser || null,
+      os: tech.os || null,
+      screen_res: tech.screen_res || null,
+      payload: { fields: data.fields || {}, source: 'wordpress', ...utm, ...clicks },
       created_at: ts,
     });
     if (error) throw error;
