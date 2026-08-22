@@ -45,11 +45,12 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Integración WordPress</CardTitle>
+          <CardTitle>Integración WordPress (Simple Lead Tracker PRO)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="max-w-lg text-sm text-gray-500">
-            Endpoint para recibir leads desde el plugin Simple Lead Tracker de WordPress.
+            Endpoint para recibir leads desde el plugin Simple Lead Tracker PRO de WordPress.
+            Acepta el formato nativo del plugin (url_pagina, user_name, user_email, etc.).
           </p>
           <div className="rounded-md bg-gray-900 p-4 text-sm text-gray-100">
             <p className="mb-1"><strong>Endpoint:</strong> <code>POST https://wlo-slt.vercel.app/api/webhooks/wordpress</code></p>
@@ -57,15 +58,17 @@ export default function SettingsPage() {
             <p className="mb-1"><strong>Env var:</strong> <code>WORDPRESS_WEBHOOK_KEY</code></p>
           </div>
           <pre className="overflow-x-auto rounded-md bg-gray-900 p-4 text-xs text-gray-100">
-{`{
+{`// Formato Simple Lead Tracker PRO (WP plugin)
+{
   "event": "form_submit",
-  "form_id": "contacto",
-  "page_url": "https://tusitio.com/contacto",
-  "referrer": "https://google.com/",
-  "fields": { "name": "Juan", "email": "juan@ejemplo.com" },
-  "utm": { "utm_source": "google", "utm_medium": "cpc" },
-  "click_ids": { "gclid": "..." },
-  "technical": { "browser": "Chrome", "device_type": "desktop" }
+  "url_pagina": "https://welovepaving.invify.online/contacto",
+  "user_name": "Juan Pérez",
+  "user_email": "juan@ejemplo.com",
+  "user_phone": "+52 55 1234 5678",
+  "session_id": "CDMX | CDMX | IP:189.203.100.50",
+  "fingerprint": "abc123",
+  "elemento_id": "form_contacto",
+  "observaciones": "Lead desde formulario"
 }`}
           </pre>
         </CardContent>
