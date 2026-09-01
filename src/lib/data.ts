@@ -19,19 +19,32 @@ function requireDb() {
 
 export async function getStats() {
   const client = requireDb();
+
+  const safeCount = async (table: string, filter?: { col: string; val: unknown }) => {
+    try {
+      let q = client.from(table).select('*', { count: 'exact', head: true });
+      if (filter) q = q.eq(filter.col, filter.val);
+      const { count } = await q;
+      return count ?? 0;
+    } catch {
+      return 0;
+    }
+  };
+
   const [events, sessions, forms, submissions, redirects] = await Promise.all([
-    client.from('events').select('*', { count: 'exact', head: true }),
-    client.from('sessions').select('*', { count: 'exact', head: true }),
-    client.from('forms').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    client.from('form_submissions').select('*', { count: 'exact', head: true }),
-    client.from('short_links').select('*', { count: 'exact', head: true }),
+    safeCount('events'),
+    safeCount('sessions'),
+    safeCount('forms', { col: 'status', val: 'active' }),
+    safeCount('form_submissions'),
+    safeCount('short_links'),
   ]);
+
   return {
-    events: events.count ?? 0,
-    sessions: sessions.count ?? 0,
-    forms: forms.count ?? 0,
-    submissions: submissions.count ?? 0,
-    redirects: redirects.count ?? 0,
+    events,
+    sessions,
+    forms,
+    submissions,
+    redirects,
     bounceRate: 54,
     avgSessionSec: 186,
   };
