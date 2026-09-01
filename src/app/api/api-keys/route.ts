@@ -10,7 +10,12 @@ export async function GET() {
     .select('id, name, key_prefix, endpoint, is_active, permissions, created_at, last_used_at, expires_at')
     .order('created_at', { ascending: false });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg = error.message.includes('does not exist')
+      ? 'Tabla api_keys no existe. Ejecuta la migración 005_api_keys.sql en Supabase.'
+      : error.message;
+    return Response.json({ error: msg }, { status: 500 });
+  }
   return Response.json(data);
 }
 
@@ -36,7 +41,12 @@ export async function POST(req: Request) {
       expires_at: expires_at || null,
     }).select('id, name, key_prefix, endpoint, is_active, created_at').single();
 
-    if (error) throw error;
+    if (error) {
+      const msg = error.message.includes('does not exist')
+        ? 'Tabla api_keys no existe. Ejecuta la migración 005_api_keys.sql en Supabase.'
+        : error.message;
+      throw new Error(msg);
+    }
 
     return Response.json({
       ...data,

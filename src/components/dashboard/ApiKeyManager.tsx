@@ -29,6 +29,7 @@ export function ApiKeyManager() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState<ApiKey | null>(null);
+  const [error, setError] = useState('');
 
   // Form
   const [name, setName] = useState('');
@@ -37,8 +38,14 @@ export function ApiKeyManager() {
 
   const load = async () => {
     setLoading(true);
+    setError('');
     const r = await fetch('/api/api-keys');
-    if (r.ok) setKeys(await r.json());
+    const d = await r.json();
+    if (r.ok) {
+      setKeys(d);
+    } else {
+      setError(d.error || 'Error al cargar keys');
+    }
     setLoading(false);
   };
 
@@ -47,6 +54,7 @@ export function ApiKeyManager() {
   const create = async () => {
     if (!name.trim()) return;
     setCreating(true);
+    setError('');
     const r = await fetch('/api/api-keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,6 +66,8 @@ export function ApiKeyManager() {
       setKeys([{ ...d, key: undefined }, ...keys]);
       setName('');
       setShowCreate(false);
+    } else {
+      setError(d.error || 'Error al crear key');
     }
     setCreating(false);
   };
@@ -91,6 +101,17 @@ export function ApiKeyManager() {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
+
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+            {error.includes('does not exist') && (
+              <p className="mt-1 text-xs text-red-600">
+                Ejecuta la migración 005_api_keys.sql en Supabase SQL Editor.
+              </p>
+            )}
+          </div>
+        )}
 
         {showCreate && (
           <div className="rounded-md border p-4 space-y-3">
