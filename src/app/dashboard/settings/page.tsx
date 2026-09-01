@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ApiKeyManager } from '@/components/dashboard/ApiKeyManager';
 
 export const metadata = { title: 'Ajustes | wlo-slt' };
 
@@ -26,6 +27,8 @@ export default function SettingsPage() {
           <StatusRow label="SLT PRO webhook" ok={hasSltKey} value={hasSltKey ? 'Autenticado' : 'Sin SLT_WEBHOOK_KEY'} />
         </CardContent>
       </Card>
+
+      <ApiKeyManager />
 
       <Card>
         <CardHeader>

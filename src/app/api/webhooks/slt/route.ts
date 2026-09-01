@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { checkApiKey } from '@/lib/apiKeys';
 import { z } from 'zod';
 
 const SLT_KEY = process.env.SLT_WEBHOOK_KEY || '';
@@ -83,11 +84,18 @@ function jsonRes(data: unknown, status = 200) {
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 
-function checkAuth(req: Request): string | null {
-  if (!SLT_KEY) return null;
+async function checkAuth(req: Request): Promise<string | null> {
   const provided = req.headers.get('x-slt-key') || '';
-  if (provided !== SLT_KEY) return 'x-slt-key inválido o faltante';
-  return null;
+  if (!provided) return 'x-slt-key faltante';
+
+  // Intentar contra DB
+  const dbValid = await checkApiKey(provided, 'slt');
+  if (dbValid) return null;
+
+  // Fallback a env var
+  if (SLT_KEY && provided === SLT_KEY) return null;
+
+  return 'x-slt-key inválido';
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────
@@ -206,7 +214,7 @@ async function handleWebhook(data: z.infer<typeof webhookSchema>) {
 // ── Route ────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
-  const authError = checkAuth(req);
+  const authError = await checkAuth(req);
   if (authError) return jsonRes({ error: authError }, 401);
 
   let body: unknown;

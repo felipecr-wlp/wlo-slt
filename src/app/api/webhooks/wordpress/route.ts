@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { checkApiKey } from '@/lib/apiKeys';
 import { z } from 'zod';
 
 const WP_KEY = process.env.WORDPRESS_WEBHOOK_KEY || '';
@@ -88,13 +89,14 @@ export async function POST(req: Request) {
     'Access-Control-Allow-Headers': 'Content-Type, X-WP-KEY',
   };
 
-  if (WP_KEY) {
+  if (WP_KEY || req.headers.get('x-wp-key')) {
     const provided = req.headers.get('x-wp-key') || '';
-    if (provided !== WP_KEY) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', message: 'X-WP-KEY inválido o faltante' }), {
-        status: 401,
-        headers,
-      });
+    if (!provided) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: 'X-WP-KEY faltante' }), { status: 401, headers });
+    }
+    const dbValid = await checkApiKey(provided, 'wordpress');
+    if (!dbValid && provided !== WP_KEY) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: 'X-WP-KEY inválido' }), { status: 401, headers });
     }
   }
 
