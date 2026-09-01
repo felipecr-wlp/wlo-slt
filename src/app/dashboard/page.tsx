@@ -13,39 +13,18 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Dashboard | wlo-slt' };
 
 export default async function DashboardPage() {
-  let stats, events, submissions, links;
-  try {
-    [stats, events, submissions, links] = await Promise.all([
-      getStats(),
-      getEvents(10),
-      getSubmissions(10),
-      getShortLinks(),
-    ]);
-  } catch (e: any) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">📊 Simple Lead Tracker</h1>
-        </div>
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader><CardTitle className="text-red-700">Supabase no configurado</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-sm text-red-600 mb-3">
-              Configura estas variables de entorno en Vercel (Project Settings → Environment Variables):
-            </p>
-            <code className="block rounded bg-red-100 px-2 py-1 text-xs text-red-800">
-              NEXT_PUBLIC_SUPABASE_URL<br />
-              SUPABASE_ANON_KEY<br />
-              SUPABASE_SERVICE_ROLE_KEY
-            </code>
-            <p className="mt-3 text-sm text-red-600">
-              {e?.message || 'Error al conectar con Supabase'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  let stats = null;
+  let events: any[] = [];
+  let submissions: any[] = [];
+  let links: any[] = [];
+
+  // Cada query es independiente — si una falla, las demás siguen
+  try { stats = await getStats(); } catch {}
+  try { events = await getEvents(10); } catch {}
+  try { submissions = await getSubmissions(10); } catch {}
+  try { links = await getShortLinks(); } catch {}
+
+  const safeStats = stats || { events: 0, sessions: 0, forms: 0, submissions: 0, redirects: 0, bounceRate: 0, avgSessionSec: 0 };
 
   return (
     <div className="space-y-6">
@@ -53,7 +32,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold">📊 Simple Lead Tracker</h1>
       </div>
 
-      <StatsCards stats={stats} />
+      <StatsCards stats={safeStats} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
