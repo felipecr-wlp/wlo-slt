@@ -136,6 +136,13 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
     created_at: ts,
   });
   if (error) throw error;
+
+  await client.from('integration_logs').insert({
+    integration: 'slt',
+    status: 'success',
+    request_payload: { tipo: 'evento', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score } as any,
+  }).catch(() => {});
+
   return { ok: true, session_id: sessionId, event_type: 'wordpress_evento' };
 }
 
@@ -193,6 +200,12 @@ async function handleRedirect(data: z.infer<typeof redirectSchema>) {
       });
     });
   }
+
+  await client.from('integration_logs').insert({
+    integration: 'slt',
+    status: 'success',
+    request_payload: { tipo: 'redirect', slug: data.slug, destino: data.destino, email: data.email } as any,
+  }).catch(() => {});
 
   return { ok: true, slug: data.slug, link_id: linkId };
 }

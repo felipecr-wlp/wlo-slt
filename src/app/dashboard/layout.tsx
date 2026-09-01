@@ -6,6 +6,7 @@ const nav = [
   { label: 'Eventos', href: '/dashboard/events' },
   { label: 'Formularios', href: '/dashboard/forms' },
   { label: 'Redirects', href: '/dashboard/redirects' },
+  { label: 'Importaciones', href: '/dashboard/imports' },
   { label: 'Integraciones', href: '/dashboard/integrations' },
   { label: 'Seguridad', href: '/dashboard/security' },
   { label: 'Ajustes', href: '/dashboard/settings' },
