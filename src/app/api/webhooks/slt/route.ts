@@ -89,7 +89,7 @@ async function checkAuth(req: Request): Promise<string | null> {
   if (!provided) return 'x-slt-key faltante';
 
   // Intentar contra DB
-  const dbValid = await checkApiKey(provided, 'slt');
+  const dbValid = await checkApiKey(provided);
   if (dbValid) return null;
 
   // Fallback a env var

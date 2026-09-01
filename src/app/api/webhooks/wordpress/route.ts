@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     if (!provided) {
       return new Response(JSON.stringify({ error: 'Unauthorized', message: 'X-WP-KEY faltante' }), { status: 401, headers });
     }
-    const dbValid = await checkApiKey(provided, 'wordpress');
+    const dbValid = await checkApiKey(provided);
     if (!dbValid && provided !== WP_KEY) {
       return new Response(JSON.stringify({ error: 'Unauthorized', message: 'X-WP-KEY inválido' }), { status: 401, headers });
     }

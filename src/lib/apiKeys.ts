@@ -54,16 +54,18 @@ export async function verifyApiKey(key: string, endpoint?: string): Promise<{ va
 }
 
 // Verifica key sin registrar uso (para auth)
-export async function checkApiKey(key: string, endpoint?: string): Promise<boolean> {
+export async function checkApiKey(key: string): Promise<boolean> {
   const client = getSupabaseAdmin();
   if (!client) return false;
 
   const hash = await hashKey(key);
 
-  let q = client.from('api_keys').select('id, is_active, expires_at').eq('key_hash', hash);
-  if (endpoint) q = q.eq('endpoint', endpoint);
+  const { data, error } = await client
+    .from('api_keys')
+    .select('id, is_active, expires_at')
+    .eq('key_hash', hash)
+    .single();
 
-  const { data, error } = await q.single();
   if (error || !data) return false;
   if (!data.is_active) return false;
   if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
