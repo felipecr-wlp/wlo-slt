@@ -107,7 +107,7 @@ export default function SettingsPage() {
           <p className="max-w-lg text-sm text-gray-500">
             Configure estas variables en Vercel (Project Settings → Environment Variables):
             <code className="mt-2 block rounded bg-gray-100 px-1.5 py-1 dark:bg-gray-800">
-              NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY, RESEND_API_KEY, WORDPRESS_WEBHOOK_KEY, SLT_WEBHOOK_KEY
+              NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, RESEND_API_KEY, WORDPRESS_WEBHOOK_KEY, SLT_WEBHOOK_KEY
             </code>
           </p>
         </CardContent>

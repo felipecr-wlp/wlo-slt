@@ -35,7 +35,7 @@ export default async function DashboardPage() {
             </p>
             <code className="block rounded bg-red-100 px-2 py-1 text-xs text-red-800">
               NEXT_PUBLIC_SUPABASE_URL<br />
-              NEXT_PUBLIC_SUPABASE_ANON_KEY<br />
+              SUPABASE_ANON_KEY<br />
               SUPABASE_SERVICE_ROLE_KEY
             </code>
             <p className="mt-3 text-sm text-red-600">
