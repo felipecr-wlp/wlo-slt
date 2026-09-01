@@ -7,6 +7,7 @@ export default function SettingsPage() {
   const hasSupabase = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const hasResend = Boolean(process.env.RESEND_API_KEY);
   const hasWpKey = Boolean(process.env.WORDPRESS_WEBHOOK_KEY);
+  const hasSltKey = Boolean(process.env.SLT_WEBHOOK_KEY);
   const endpoint = process.env.NEXT_PUBLIC_TRACKER_ENDPOINT || 'https://wlo-slt.vercel.app/api/ingest';
 
   return (
@@ -22,6 +23,7 @@ export default function SettingsPage() {
           <StatusRow label="Resend (email)" ok={hasResend} />
           <StatusRow label="Endpoint tracker" ok={true} value={endpoint} />
           <StatusRow label="WordPress webhook" ok={hasWpKey} value={hasWpKey ? 'Autenticado' : 'Sin WORDPRESS_WEBHOOK_KEY'} />
+          <StatusRow label="SLT PRO webhook" ok={hasSltKey} value={hasSltKey ? 'Autenticado' : 'Sin SLT_WEBHOOK_KEY'} />
         </CardContent>
       </Card>
 
@@ -49,27 +51,47 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="max-w-lg text-sm text-gray-500">
-            Endpoint para recibir leads desde el plugin Simple Lead Tracker PRO de WordPress.
-            Acepta el formato nativo del plugin (url_pagina, user_name, user_email, etc.).
+            Endpoint para recibir datos del plugin Simple Lead Tracker PRO v3.02.
+            Soporta eventos, redirects, webhooks CRM y test de conexión.
           </p>
           <div className="rounded-md bg-gray-900 p-4 text-sm text-gray-100">
-            <p className="mb-1"><strong>Endpoint:</strong> <code>POST https://wlo-slt.vercel.app/api/webhooks/wordpress</code></p>
-            <p className="mb-1"><strong>Auth:</strong> Header <code>X-WP-KEY: tu-api-key</code></p>
-            <p className="mb-1"><strong>Env var:</strong> <code>WORDPRESS_WEBHOOK_KEY</code></p>
+            <p className="mb-1"><strong>Endpoint:</strong> <code>POST https://wlo-slt.vercel.app/api/webhooks/slt</code></p>
+            <p className="mb-1"><strong>Auth:</strong> Header <code>x-slt-key: tu-api-key</code></p>
+            <p className="mb-1"><strong>Env var:</strong> <code>SLT_WEBHOOK_KEY</code></p>
           </div>
           <pre className="overflow-x-auto rounded-md bg-gray-900 p-4 text-xs text-gray-100">
-{`// Formato Simple Lead Tracker PRO (WP plugin)
+{`// Evento de tracking
 {
-  "event": "form_submit",
-  "url_pagina": "https://welovepaving.invify.online/contacto",
+  "tipo": "evento",
+  "timestamp": "2026-08-20 14:30:00",
+  "session_id": "Sacramento, California | US | IP:73.158.42.110",
+  "url_pagina": "https://welovepaving.com/contacto",
+  "elemento_id": "Entrada",
   "user_name": "Juan Pérez",
   "user_email": "juan@ejemplo.com",
-  "user_phone": "+52 55 1234 5678",
-  "session_id": "CDMX | CDMX | IP:189.203.100.50",
-  "fingerprint": "abc123",
-  "elemento_id": "form_contacto",
-  "observaciones": "Lead desde formulario"
-}`}
+  "score": 25,
+  "persona": "Visitante Casual"
+}
+
+// Redirect / enlace corto
+{
+  "tipo": "redirect",
+  "slug": "demo",
+  "campana": "Verano 2026",
+  "destino": "https://welovepaving.com/contacto",
+  "utm_source": "google",
+  "utm_medium": "cpc"
+}
+
+// Webhook CRM
+{
+  "tipo": "webhook",
+  "source": "pipedrive",
+  "payload": { "action": "added", "name": "Juan" }
+}
+
+// Test de conexión
+{ "tipo": "test_connection" }`}
           </pre>
         </CardContent>
       </Card>
@@ -82,7 +104,7 @@ export default function SettingsPage() {
           <p className="max-w-lg text-sm text-gray-500">
             Configure estas variables en Vercel (Project Settings → Environment Variables):
             <code className="mt-2 block rounded bg-gray-100 px-1.5 py-1 dark:bg-gray-800">
-              NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY, RESEND_API_KEY, WORDPRESS_WEBHOOK_KEY
+              NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY, RESEND_API_KEY, WORDPRESS_WEBHOOK_KEY, SLT_WEBHOOK_KEY
             </code>
           </p>
         </CardContent>
