@@ -107,49 +107,51 @@ function toUUID(value: string | null | undefined): string {
   return crypto.randomUUID?.() || '00000000-0000-0000-0000-000000000000';
 }
 
+function eventoRow(data: Record<string, unknown>, ts?: string) {
+  const d = data as any;
+  return {
+    session_id: toUUID(d.session_id),
+    event_type: 'wordpress_evento',
+    element_id: d.elemento_id || null,
+    url: d.url_pagina || 'unknown',
+    fingerprint: d.fingerprint || null,
+    utm_source: d.utm_source || null,
+    utm_medium: d.utm_medium || null,
+    utm_campaign: d.utm_campaign || null,
+    utm_content: d.utm_content || null,
+    utm_term: d.utm_term || null,
+    gclid: d.gclid || null,
+    fbclid: d.fbclid || null,
+    country: d.location || null,
+    payload: {
+      user_name: d.user_name || null,
+      user_email: d.user_email || null,
+      user_phone: d.user_phone || null,
+      user_ip: d.user_ip || null,
+      user_profile: d.user_profile || null,
+      observaciones: d.observaciones || null,
+      score: d.score ?? null,
+      persona: d.persona || null,
+      source: d.source || 'simple_lead_tracker',
+      version: d.version || null,
+      raw_session_id: d.session_id || null,
+    },
+    created_at: ts || d.timestamp || new Date().toISOString(),
+  };
+}
+
 async function handleEvento(data: z.infer<typeof eventoSchema>) {
   const client = getSupabaseAdmin();
   if (!client) throw new Error('Supabase no configurado');
 
-  const sessionId = toUUID(data.session_id);
-  const ts = data.timestamp || new Date().toISOString();
-
-  const { error } = await client.from('events').insert({
-    session_id: sessionId,
-    event_type: 'wordpress_evento',
-    element_id: data.elemento_id || null,
-    url: data.url_pagina || 'unknown',
-    fingerprint: data.fingerprint || null,
-    utm_source: data.utm_source || null,
-    utm_medium: data.utm_medium || null,
-    utm_campaign: data.utm_campaign || null,
-    utm_content: data.utm_content || null,
-    utm_term: data.utm_term || null,
-    gclid: data.gclid || null,
-    fbclid: data.fbclid || null,
-    country: data.location || null,
-    payload: {
-      user_name: data.user_name || null,
-      user_email: data.user_email || null,
-      user_phone: data.user_phone || null,
-      user_ip: data.user_ip || null,
-      user_profile: data.user_profile || null,
-      observaciones: data.observaciones || null,
-      score: data.score ?? null,
-      persona: data.persona || null,
-      source: data.source || 'simple_lead_tracker',
-      version: data.version || null,
-      raw_session_id: data.session_id || null,
-    },
-    created_at: ts,
-  });
+  const { error } = await client.from('events').insert(eventoRow(data as unknown as Record<string, unknown>, data.timestamp || undefined));
   if (error) {
     await client.from('integration_logs').insert({
       integration: 'slt',
       status: 'error',
       request_payload: { tipo: 'evento', error: error.message, user_email: data.user_email } as any,
       error_message: error.message,
-    }).catch(() => {});
+    }).then(() => {}, () => {});
     throw error;
   }
 
@@ -157,16 +159,33 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
     integration: 'slt',
     status: 'success',
     request_payload: { tipo: 'evento', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score } as any,
-  }).catch(() => {});
+  }).then(() => {}, () => {});
 
-  return { ok: true, session_id: sessionId, event_type: 'wordpress_evento' };
+  return { ok: true };
+}
+
+async function handleBulkEventos(body: any) {
+  const client = getSupabaseAdmin();
+  if (!client) throw new Error('Supabase no configurado');
+
+  const events: any[] = body.events || [];
+  const rows = events.map((e) => eventoRow(e));
+  const { error, data: inserted } = await client.from('events').insert(rows).select('id');
+  if (error) throw error;
+
+  await client.from('integration_logs').insert({
+    integration: 'slt',
+    status: 'success',
+    request_payload: { tipo: 'bulk_eventos', count: rows.length } as any,
+  }).then(() => {}, () => {});
+
+  return { ok: true, imported: inserted?.length || rows.length };
 }
 
 async function handleRedirect(data: z.infer<typeof redirectSchema>) {
   const client = getSupabaseAdmin();
   if (!client) throw new Error('Supabase no configurado');
 
-  // Buscar el short_link por slug para obtener el link_id
   let linkId: string | null = null;
   if (data.slug) {
     const { data: link } = await client
@@ -177,7 +196,6 @@ async function handleRedirect(data: z.infer<typeof redirectSchema>) {
     linkId = link?.id || null;
   }
 
-  // Si no existe el slug, crear el short_link automáticamente
   if (!linkId && data.slug) {
     const { data: newLink } = await client
       .from('short_links')
@@ -206,24 +224,64 @@ async function handleRedirect(data: z.infer<typeof redirectSchema>) {
       user_agent: data.user_agent || null,
     });
     if (error) throw error;
-
-    // Incrementar contador de clicks
-    await client.rpc('increment_clicks' as any, { link_id_param: linkId }).catch(() => {
-      client.from('short_links').select('clicks').eq('id', linkId).single().then(({ data: link }: { data: { clicks: number } | null }) => {
-        if (link) {
-          client.from('short_links').update({ clicks: (link.clicks || 0) + 1 }).eq('id', linkId);
-        }
-      });
-    });
   }
 
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
     request_payload: { tipo: 'redirect', slug: data.slug, destino: data.destino, email: data.email } as any,
-  }).catch(() => {});
+  }).then(() => {}, () => {});
 
   return { ok: true, slug: data.slug, link_id: linkId };
+}
+
+async function handleBulkRedirects(body: any) {
+  const client = getSupabaseAdmin();
+  if (!client) throw new Error('Supabase no configurado');
+
+  const redirects: any[] = body.redirects || [];
+  let imported = 0;
+
+  for (const r of redirects) {
+    const slug = r.slug || r.id;
+    if (!slug) continue;
+
+    let linkId: string | null = null;
+    const { data: existing } = await client.from('short_links').select('id').eq('slug', slug).single();
+    linkId = existing?.id || null;
+
+    if (!linkId) {
+      const { data: newLink } = await client
+        .from('short_links')
+        .insert({ id: slug, name: r.campana || slug, slug, target_url: r.destino || '', plataforma: r.plataforma || 'General' })
+        .select('id')
+        .single();
+      linkId = newLink?.id || null;
+    }
+
+    if (linkId) {
+      await client.from('redirect_clicks').insert({
+        link_id: linkId,
+        session_id: r.session_id || null,
+        fingerprint: r.fingerprint || null,
+        ip_hash: r.ip || null,
+        referrer: r.referer || null,
+        utm_source: r.utm_source || null,
+        utm_medium: r.utm_medium || null,
+        utm_campaign: r.utm_campaign || null,
+        user_agent: r.user_agent || null,
+      }).then(() => {}, () => {});
+      imported++;
+    }
+  }
+
+  await client.from('integration_logs').insert({
+    integration: 'slt',
+    status: 'success',
+    request_payload: { tipo: 'bulk_redirects', count: imported } as any,
+  }).then(() => {}, () => {});
+
+  return { ok: true, imported };
 }
 
 async function handleWebhook(data: z.infer<typeof webhookSchema>) {
@@ -238,6 +296,29 @@ async function handleWebhook(data: z.infer<typeof webhookSchema>) {
   if (error) throw error;
 
   return { ok: true, source: data.source };
+}
+
+async function handleBulkWebhooks(body: any) {
+  const client = getSupabaseAdmin();
+  if (!client) throw new Error('Supabase no configurado');
+
+  const webhooks: any[] = body.webhooks || [];
+  const rows = webhooks.map((w) => ({
+    integration: w.source || 'wordpress_webhook',
+    status: w.status || 'pending',
+    request_payload: typeof w.payload === 'string' ? JSON.parse(w.payload || '{}') : (w.payload || {}),
+  }));
+
+  const { error } = await client.from('integration_logs').insert(rows);
+  if (error) throw error;
+
+  await client.from('integration_logs').insert({
+    integration: 'slt',
+    status: 'success',
+    request_payload: { tipo: 'bulk_webhooks', count: rows.length } as any,
+  }).then(() => {}, () => {});
+
+  return { ok: true, imported: rows.length };
 }
 
 // ── Route ────────────────────────────────────────────────────────────────
@@ -256,11 +337,29 @@ export async function POST(req: Request) {
   const tipo = (body as any)?.tipo;
 
   try {
+    // ── WLi Tracking (sin campo "tipo") ──
+    if (!tipo && (body as any)?.url_pagina) {
+      const client = getSupabaseAdmin();
+      if (!client) throw new Error('Supabase no configurado');
+      const { error } = await client.from('events').insert(eventoRow(body as Record<string, unknown>));
+      if (error) throw error;
+      await client.from('integration_logs').insert({
+        integration: 'slt',
+        status: 'success',
+        request_payload: { tipo: 'wli_tracking', user_email: (body as any).user_email } as any,
+      }).then(() => {}, () => {});
+      return jsonRes({ ok: true, mode: 'wli_tracking' });
+    }
+
     switch (tipo) {
       case 'evento': {
         const parsed = eventoSchema.safeParse(body);
         if (!parsed.success) return jsonRes({ error: 'Validation error', details: parsed.error.flatten() }, 400);
         const result = await handleEvento(parsed.data);
+        return jsonRes(result);
+      }
+      case 'bulk_eventos': {
+        const result = await handleBulkEventos(body);
         return jsonRes(result);
       }
       case 'redirect': {
@@ -269,10 +368,18 @@ export async function POST(req: Request) {
         const result = await handleRedirect(parsed.data);
         return jsonRes(result);
       }
+      case 'bulk_redirects': {
+        const result = await handleBulkRedirects(body);
+        return jsonRes(result);
+      }
       case 'webhook': {
         const parsed = webhookSchema.safeParse(body);
         if (!parsed.success) return jsonRes({ error: 'Validation error', details: parsed.error.flatten() }, 400);
         const result = await handleWebhook(parsed.data);
+        return jsonRes(result);
+      }
+      case 'bulk_webhooks': {
+        const result = await handleBulkWebhooks(body);
         return jsonRes(result);
       }
       case 'test_connection': {
@@ -287,7 +394,7 @@ export async function POST(req: Request) {
         return jsonRes({ ok: true, message: 'Conexión exitosa con wlo-slt', timestamp: new Date().toISOString() });
       }
       default:
-        return jsonRes({ error: `Tipo desconocido: ${tipo}. Tipos válidos: evento, redirect, webhook, test_connection` }, 400);
+        return jsonRes({ error: `Tipo desconocido: ${tipo}. Tipos válidos: evento, bulk_eventos, redirect, bulk_redirects, webhook, bulk_webhooks, test_connection` }, 400);
     }
   } catch (e: any) {
     return jsonRes({ error: e?.message || 'Error interno del servidor' }, 500);
@@ -306,9 +413,13 @@ export async function GET() {
     env_var: 'SLT_WEBHOOK_KEY',
     tipos: {
       evento: 'Tracking de eventos del plugin (pageview, form_submit, click, etc.)',
+      bulk_eventos: 'Importación masiva de eventos',
       redirect: 'Clicks en enlaces cortos / redirects',
+      bulk_redirects: 'Importación masiva de redirects',
       webhook: 'Webhooks de CRM (Pipedrive, ClickUp, etc.)',
+      bulk_webhooks: 'Importación masiva de webhooks',
       test_connection: 'Prueba de conexión desde el plugin',
+      wli_tracking: 'WLi Tracking sin campo "tipo" (fire-and-forget)',
     },
     payload_evento: {
       tipo: 'evento',
