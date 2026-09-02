@@ -281,8 +281,8 @@ export async function POST(req: Request) {
           await client.from('integration_logs').insert({
             integration: 'slt',
             status: 'success',
-            request_payload: { tipo: 'test_connection', source: 'wordpress' } as any,
-          }).catch(() => {});
+            request_payload: { tipo: 'test_connection', source: 'wordpress' },
+          }).then(() => {}, () => {});
         }
         return jsonRes({ ok: true, message: 'Conexión exitosa con wlo-slt', timestamp: new Date().toISOString() });
       }
