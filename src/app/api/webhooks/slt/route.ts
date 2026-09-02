@@ -100,18 +100,25 @@ async function checkAuth(req: Request): Promise<string | null> {
 
 // ── Handlers ─────────────────────────────────────────────────────────────
 
+function toUUID(value: string | null | undefined): string {
+  if (value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+    return value;
+  }
+  return crypto.randomUUID?.() || '00000000-0000-0000-0000-000000000000';
+}
+
 async function handleEvento(data: z.infer<typeof eventoSchema>) {
   const client = getSupabaseAdmin();
   if (!client) throw new Error('Supabase no configurado');
 
-  const sessionId = data.session_id || `slt-${crypto.randomUUID?.() || Date.now()}`;
+  const sessionId = toUUID(data.session_id);
   const ts = data.timestamp || new Date().toISOString();
 
   const { error } = await client.from('events').insert({
     session_id: sessionId,
     event_type: 'wordpress_evento',
     element_id: data.elemento_id || null,
-    url: data.url_pagina || null,
+    url: data.url_pagina || 'unknown',
     fingerprint: data.fingerprint || null,
     utm_source: data.utm_source || null,
     utm_medium: data.utm_medium || null,
@@ -132,10 +139,19 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
       persona: data.persona || null,
       source: data.source || 'simple_lead_tracker',
       version: data.version || null,
+      raw_session_id: data.session_id || null,
     },
     created_at: ts,
   });
-  if (error) throw error;
+  if (error) {
+    await client.from('integration_logs').insert({
+      integration: 'slt',
+      status: 'error',
+      request_payload: { tipo: 'evento', error: error.message, user_email: data.user_email } as any,
+      error_message: error.message,
+    }).catch(() => {});
+    throw error;
+  }
 
   await client.from('integration_logs').insert({
     integration: 'slt',
