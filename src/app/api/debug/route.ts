@@ -19,5 +19,15 @@ export async function GET() {
     results[table] = { count: count ?? 0, sample: sample ?? [], error: sampleErr?.message };
   }
 
-  return Response.json(results, { headers: { 'Content-Type': 'application/json' } });
+  // Also check: can service_role actually read events?
+  const { data: evTest, error: evErr } = await client
+    .from('events')
+    .select('id, event_type, url, payload, created_at')
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  return Response.json({
+    tables: results,
+    events_query: { data: evTest ?? [], error: evErr?.message ?? null },
+  }, { headers: { 'Content-Type': 'application/json' } });
 }

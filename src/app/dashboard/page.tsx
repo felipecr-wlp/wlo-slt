@@ -17,12 +17,13 @@ export default async function DashboardPage() {
   let events: any[] = [];
   let submissions: any[] = [];
   let links: any[] = [];
+  let errors: string[] = [];
 
   // Cada query es independiente — si una falla, las demás siguen
-  try { stats = await getStats(); } catch {}
-  try { events = await getEvents(10); } catch {}
-  try { submissions = await getSubmissions(10); } catch {}
-  try { links = await getShortLinks(); } catch {}
+  try { stats = await getStats(); } catch (e: any) { errors.push(`stats: ${e?.message || e}`); }
+  try { events = await getEvents(10); } catch (e: any) { errors.push(`events: ${e?.message || e}`); }
+  try { submissions = await getSubmissions(10); } catch (e: any) { errors.push(`submissions: ${e?.message || e}`); }
+  try { links = await getShortLinks(); } catch (e: any) { errors.push(`links: ${e?.message || e}`); }
 
   const safeStats = stats || { events: 0, sessions: 0, forms: 0, submissions: 0, redirects: 0, bounceRate: 0, avgSessionSec: 0 };
 
@@ -31,6 +32,15 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">📊 Simple Lead Tracker</h1>
       </div>
+
+      {errors.length > 0 && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          <p className="font-medium">Errores al cargar datos:</p>
+          <ul className="list-disc pl-5 mt-1">
+            {errors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+        </div>
+      )}
 
       <StatsCards stats={safeStats} />
 
