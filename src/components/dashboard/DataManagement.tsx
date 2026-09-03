@@ -69,7 +69,7 @@ export function DataManagement() {
   }
 
   return (
-    <Card className="mt-4">
+    <Card className="mt-4 bg-transparent border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">
       <CardHeader>
         <CardTitle>Gestión de datos</CardTitle>
         <div className="flex gap-1 flex-wrap">
