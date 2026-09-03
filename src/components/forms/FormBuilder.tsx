@@ -102,7 +102,7 @@ export function FormBuilder({ form }: { form: Form }) {
             <select
               value={status}
               onChange={(e) => { setStatus(e.target.value as Form['status']); markDirty(); }}
-              className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 dark:bg-gray-900"
+              className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
             >
               <option value="active">Activo</option>
               <option value="archived">Archivado</option>
@@ -124,7 +124,7 @@ export function FormBuilder({ form }: { form: Form }) {
                 <select
                   value={f.type}
                   onChange={(e) => { updateField(i, { type: e.target.value as FormField['type'] }); markDirty(); }}
-                  className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 dark:bg-gray-900"
+                  className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                 >
                   <option value="text">Texto</option>
                   <option value="email">Email</option>

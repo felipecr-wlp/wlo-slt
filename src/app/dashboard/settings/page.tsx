@@ -39,7 +39,7 @@ export default function SettingsPage() {
             Copie este snippet en cualquier sitio (WP, React, Vue, HTML estático) para
             empezar a trackear leads:
           </p>
-          <pre className="overflow-x-auto rounded-md bg-gray-900 p-4 text-sm text-gray-100">
+          <pre className="overflow-x-auto rounded-md bg-gray-100 dark:bg-gray-800 p-4 text-sm text-gray-900 dark:text-gray-100 border dark:border-gray-700">
 {`<script src="https://wlo-slt.vercel.app/tracker.js"
   data-site-id="misitio"
   data-endpoint="${endpoint}"
@@ -57,12 +57,12 @@ export default function SettingsPage() {
             Endpoint para recibir datos del plugin Simple Lead Tracker PRO v3.02.
             Soporta eventos, redirects, webhooks CRM y test de conexión.
           </p>
-          <div className="rounded-md bg-gray-900 p-4 text-sm text-gray-100">
+          <div className="rounded-md bg-gray-100 dark:bg-gray-800 p-4 text-sm text-gray-900 dark:text-gray-100 border dark:border-gray-700">
             <p className="mb-1"><strong>Endpoint:</strong> <code>POST https://wlo-slt.vercel.app/api/webhooks/slt</code></p>
             <p className="mb-1"><strong>Auth:</strong> Header <code>x-slt-key: tu-api-key</code></p>
             <p className="mb-1"><strong>Env var:</strong> <code>SLT_WEBHOOK_KEY</code></p>
           </div>
-          <pre className="overflow-x-auto rounded-md bg-gray-900 p-4 text-xs text-gray-100">
+          <pre className="overflow-x-auto rounded-md bg-gray-100 dark:bg-gray-800 p-4 text-xs text-gray-900 dark:text-gray-100 border dark:border-gray-700">
 {`// Evento de tracking
 {
   "tipo": "evento",

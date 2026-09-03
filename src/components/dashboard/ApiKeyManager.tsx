@@ -118,7 +118,7 @@ export function ApiKeyManager() {
             <div><Label>Nombre</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: SLT PRO - welovepaving" /></div>
             <div>
               <Label>Endpoint</Label>
-              <select value={endpoint} onChange={(e) => setEndpoint(e.target.value)} className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 dark:bg-gray-900">
+              <select value={endpoint} onChange={(e) => setEndpoint(e.target.value)} className="mt-1 block w-full rounded-md border border-input bg-white px-3 py-2 text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                 {ENDPOINTS.map((ep) => <option key={ep.value} value={ep.value}>{ep.label}</option>)}
               </select>
             </div>

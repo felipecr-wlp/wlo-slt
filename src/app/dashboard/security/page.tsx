@@ -69,10 +69,10 @@ export default function SecurityPage() {
       <h1 className="text-2xl font-bold">Seguridad</h1>
 
       {createdKey && (
-        <Card className="border-green-300 bg-green-50">
+        <Card className="border-green-300 bg-green-50 dark:bg-green-900/30 dark:border-green-700">
           <CardContent className="py-4">
-            <p className="text-sm font-medium text-green-800">API Key creada. Cópiala ahora — no se volverá a mostrar:</p>
-            <code className="mt-2 block rounded bg-white p-3 text-sm font-mono break-all border">{createdKey}</code>
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">API Key creada. Cópiala ahora — no se volverá a mostrar:</p>
+            <code className="mt-2 block rounded bg-white dark:bg-gray-800 p-3 text-sm font-mono break-all border dark:border-gray-600 dark:text-gray-100">{createdKey}</code>
             <Button onClick={() => navigator.clipboard.writeText(createdKey)}>Copiar</Button>
             <Button className="ml-2" variant="outline" onClick={() => setCreatedKey(null)}>Cerrar</Button>
           </CardContent>
@@ -90,13 +90,13 @@ export default function SecurityPage() {
           {showCreate && (
             <div className="mb-4 space-y-3 rounded border p-4">
               <input
-                className="w-full rounded border px-3 py-2 text-sm"
+                className="w-full rounded border px-3 py-2 text-sm text-gray-900 bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                 placeholder="Nombre (ej: WordPress SLT)"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
               />
               <select
-                className="w-full rounded border px-3 py-2 text-sm"
+                className="w-full rounded border px-3 py-2 text-sm text-gray-900 bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                 value={newEndpoint}
                 onChange={(e) => setNewEndpoint(e.target.value)}
               >
@@ -105,7 +105,7 @@ export default function SecurityPage() {
                 <option value="ingest">Tracker Ingest</option>
               </select>
               <input
-                className="w-full rounded border px-3 py-2 text-sm"
+                className="w-full rounded border px-3 py-2 text-sm text-gray-900 bg-white dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
                 placeholder="Expira en días (opcional)"
                 type="number"
                 value={newExpiry}
