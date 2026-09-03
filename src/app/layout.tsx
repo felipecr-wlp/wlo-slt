@@ -8,21 +8,8 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            var d = document.documentElement;
-            var theme = localStorage.getItem('theme');
-            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-              d.classList.add('dark');
-            } else {
-              d.classList.remove('dark');
-            }
-          })();
-        `}} />
-      </head>
-      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+    <html lang="es">
+      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
         {children}
       </body>
     </html>
