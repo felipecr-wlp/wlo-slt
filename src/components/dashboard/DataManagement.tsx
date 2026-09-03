@@ -88,7 +88,7 @@ export function DataManagement() {
           <div className="space-y-3">
             <div>
               <Label>Tabla</Label>
-              <select value={clearTable} onChange={(e) => setClearTable(e.target.value)} className="w-full border rounded p-1">
+              <select value={clearTable} onChange={(e) => setClearTable(e.target.value)} className="w-full border rounded p-1 text-gray-900 bg-white">
                 {TABLES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -111,7 +111,7 @@ export function DataManagement() {
           <div className="space-y-3">
             <div>
               <Label>Tipo</Label>
-              <select value={importType} onChange={(e) => setImportType(e.target.value)} className="w-full border rounded p-1">
+              <select value={importType} onChange={(e) => setImportType(e.target.value)} className="w-full border rounded p-1 text-gray-900 bg-white">
                 {(tab === 'export' ? EXPORT_TYPES : IMPORT_TYPES).map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
