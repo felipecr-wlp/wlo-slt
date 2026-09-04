@@ -8,7 +8,6 @@ import { RedirectsOverview } from '@/components/dashboard/RedirectsOverview';
 import { FunnelChart } from '@/components/dashboard/FunnelChart';
 import { EventTypeChart } from '@/components/dashboard/EventTypeChart';
 import { RealtimeFeed } from '@/components/dashboard/RealtimeFeed';
-import { DataManagement } from '@/components/dashboard/DataManagement';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DashboardClient() {
@@ -107,8 +106,6 @@ export default function DashboardClient() {
           <RealtimeFeed />
         </CardContent>
       </Card>
-
-      <DataManagement />
     </div>
   );
 }

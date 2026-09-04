@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ApiKeyManager } from '@/components/dashboard/ApiKeyManager';
+import { DataManagement } from '@/components/dashboard/DataManagement';
 
 export const metadata = { title: 'Ajustes | wlo-slt' };
 
@@ -112,6 +113,8 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <DataManagement />
     </div>
   );
 }
