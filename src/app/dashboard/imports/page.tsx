@@ -24,6 +24,7 @@ export default function ImportsPage() {
     setLoading(true);
     const params = new URLSearchParams({ limit: String(limit), offset: String(page * limit) });
     if (filter !== 'all') params.set('integration', filter);
+    params.set('exclude', 'test_connection');
     const r = await fetch(`/api/logs?${params}`);
     if (r.ok) {
       const d = await r.json();
