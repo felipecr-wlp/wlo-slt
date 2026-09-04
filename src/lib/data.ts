@@ -160,7 +160,7 @@ export async function searchEvents(filter: { url?: string; type?: string; limit?
   return (data ?? []) as EventRow[];
 }
 
-const CLEARABLE = ['events', 'sessions', 'form_submissions', 'short_links', 'forms', 'ip_rules'];
+const CLEARABLE = ['events', 'sessions', 'form_submissions', 'short_links', 'forms', 'ip_rules', 'integration_logs'];
 export async function clearDataTable(table: string): Promise<{ count: number }> {
   if (!CLEARABLE.includes(table)) throw new Error(`table not allowed: ${table}`);
   const client = requireDb();
