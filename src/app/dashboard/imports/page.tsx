@@ -18,6 +18,7 @@ export default function ImportsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const limit = 50;
 
   const load = async () => {
@@ -35,29 +36,50 @@ export default function ImportsPage() {
 
   useEffect(() => { load(); }, [filter, page]);
 
-  const getSite = (log: LogEntry): string => {
-    const p = log.request_payload as any;
-    return p?.site || '-';
-  };
+  const p = (log: LogEntry) => log.request_payload as any;
+
+  const getSite = (log: LogEntry): string => p(log)?.site || '-';
 
   const getTipo = (log: LogEntry): string => {
-    const p = log.request_payload as any;
-    return p?.tipo || p?.event || p?._normalized?.eventType || log.integration;
+    const d = p(log);
+    return d?.tipo || d?.event || d?._normalized?.eventType || log.integration;
+  };
+
+  const getSaved = (log: LogEntry): boolean | null => {
+    const d = p(log);
+    if (d?.saved === true) return true;
+    if (d?.saved === false) return false;
+    if (log.status === 'success') return true;
+    if (log.status === 'error') return false;
+    return null;
   };
 
   const getResumen = (log: LogEntry): string => {
-    const p = log.request_payload as any;
-    if (p?.tipo === 'evento') return p?.user_email || p?.user_name || p?.url_pagina || '-';
-    if (p?.tipo === 'bulk_eventos') return `${p?.count || 0} eventos`;
-    if (p?.tipo === 'bulk_redirects') return `${p?.count || 0} redirects`;
-    if (p?.tipo === 'bulk_webhooks') return `${p?.count || 0} webhooks`;
-    if (p?.tipo === 'redirect') return `/${p?.slug || ''} → ${p?.destino || ''}`;
-    if (p?.tipo === 'webhook') return p?.source || '-';
-    if (p?.tipo === 'test_connection') return 'Test OK';
-    if (p?.tipo === 'wli_tracking') return p?.user_email || '-';
-    if (p?.source === 'wordpress') return p?.fields?.email || p?.fields?.name || '-';
-    return p?.email || p?.name || '-';
+    const d = p(log);
+    if (d?.tipo === 'evento') return d?.user_email || d?.user_name || d?.url_pagina || '-';
+    if (d?.tipo === 'bulk_eventos') return `${d?.count || 0} eventos`;
+    if (d?.tipo === 'bulk_redirects') return `${d?.count || 0} redirects`;
+    if (d?.tipo === 'bulk_webhooks') return `${d?.count || 0} webhooks`;
+    if (d?.tipo === 'redirect') return `/${d?.slug || ''} → ${d?.destino || ''}`;
+    if (d?.tipo === 'webhook') return d?.source || '-';
+    if (d?.tipo === 'wli_tracking') return d?.user_email || '-';
+    if (d?.source === 'wordpress') return d?.fields?.email || d?.fields?.name || '-';
+    return d?.email || d?.name || '-';
   };
+
+  const getObservaciones = (log: LogEntry): string | null => {
+    const d = p(log);
+    const parts: string[] = [];
+    if (d?.observaciones) parts.push(d.observaciones);
+    if (d?.reason) parts.push(`Error: ${d.reason}`);
+    if (d?.code) parts.push(`Código: ${d.code}`);
+    if (d?.table) parts.push(`Tabla: ${d.table}`);
+    if (d?.skipped > 0) parts.push(`Saltados: ${d.skipped}`);
+    if (log.error_message) parts.push(log.error_message);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  };
+
+  const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
   return (
     <div className="space-y-6">
@@ -84,33 +106,45 @@ export default function ImportsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {logs.map((log) => (
-            <Card key={log.id}>
-              <CardContent className="py-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
-                        {log.status}
-                      </Badge>
-                      <Badge variant="outline">{getTipo(log)}</Badge>
-                      {getSite(log) !== '-' && (
-                        <Badge variant="secondary" className="font-mono text-xs">{getSite(log)}</Badge>
+          {logs.map((log) => {
+            const saved = getSaved(log);
+            const obs = getObservaciones(log);
+            const isOpen = expanded === log.id;
+            return (
+              <Card key={log.id} className="cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => toggleExpand(log.id)}>
+                <CardContent className="py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={saved === true ? 'default' : saved === false ? 'destructive' : 'secondary'}>
+                          {saved === true ? 'Guardado' : saved === false ? 'No guardado' : log.status}
+                        </Badge>
+                        <Badge variant="outline">{getTipo(log)}</Badge>
+                        {getSite(log) !== '-' && (
+                          <Badge variant="secondary" className="font-mono text-xs">{getSite(log)}</Badge>
+                        )}
+                        <span className="text-xs text-gray-500">{log.integration}</span>
+                      </div>
+                      <p className="text-sm truncate">{getResumen(log)}</p>
+                      {obs && (
+                        <p className={`text-xs ${saved === false ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                          {obs}
+                        </p>
                       )}
-                      <span className="text-xs text-gray-500">{log.integration}</span>
                     </div>
-                    <p className="text-sm truncate">{getResumen(log)}</p>
-                    {log.error_message && (
-                      <p className="text-xs text-red-600">{log.error_message}</p>
-                    )}
+                    <span className="text-xs text-gray-400 whitespace-nowrap">
+                      {new Date(log.created_at).toLocaleString('es-MX')}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString('es-MX')}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {isOpen && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded text-xs font-mono text-gray-700 overflow-x-auto">
+                      <pre className="whitespace-pre-wrap break-all">{JSON.stringify(p(log), null, 2)}</pre>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

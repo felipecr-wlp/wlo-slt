@@ -149,8 +149,8 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
     await client.from('integration_logs').insert({
       integration: 'slt',
       status: 'error',
-      request_payload: { tipo: 'evento', error: error.message, user_email: data.user_email } as any,
-      error_message: error.message,
+      request_payload: { tipo: 'evento', saved: false, reason: error.message, code: error.code, table: 'events', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, session_id: data.session_id, site: extractSite(data) } as any,
+      error_message: `${error.message} (${error.code || 'no-code'}) — tabla: events`,
     }).then(() => {}, () => {});
     throw error;
   }
@@ -158,7 +158,7 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'evento', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score, site: extractSite(data) } as any,
+    request_payload: { tipo: 'evento', saved: true, user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score, session_id: data.session_id, site: extractSite(data), observaciones: data.observaciones } as any,
   }).then(() => {}, () => {});
 
   return { ok: true };
@@ -179,12 +179,20 @@ async function handleBulkEventos(body: any) {
   const events: any[] = body.events || [];
   const rows = events.map((e) => eventoRow(e));
   const { error, data: inserted } = await client.from('events').insert(rows).select('id');
-  if (error) throw error;
+  if (error) {
+    await client.from('integration_logs').insert({
+      integration: 'slt',
+      status: 'error',
+      request_payload: { tipo: 'bulk_eventos', saved: false, reason: error.message, code: error.code, table: 'events', total: rows.length, site: extractSite(body) } as any,
+      error_message: `${error.message} (${error.code || 'no-code'}) — bulk de ${rows.length} eventos`,
+    }).then(() => {}, () => {});
+    throw error;
+  }
 
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'bulk_eventos', count: rows.length, site: extractSite(body) } as any,
+    request_payload: { tipo: 'bulk_eventos', saved: true, count: inserted?.length || rows.length, site: extractSite(body) } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, imported: inserted?.length || rows.length };
@@ -231,13 +239,21 @@ async function handleRedirect(data: z.infer<typeof redirectSchema>) {
       utm_campaign: data.utm_campaign || null,
       user_agent: data.user_agent || null,
     });
-    if (error) throw error;
+    if (error) {
+      await client.from('integration_logs').insert({
+        integration: 'slt',
+        status: 'error',
+        request_payload: { tipo: 'redirect', saved: false, reason: error.message, code: error.code, table: 'redirect_clicks', slug: data.slug, destino: data.destino, email: data.email } as any,
+        error_message: `${error.message} (${error.code || 'no-code'}) — redirect_clicks, slug: ${data.slug}`,
+      }).then(() => {}, () => {});
+      throw error;
+    }
   }
 
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'redirect', slug: data.slug, destino: data.destino, email: data.email } as any,
+    request_payload: { tipo: 'redirect', saved: true, slug: data.slug, destino: data.destino, email: data.email, link_id: linkId } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, slug: data.slug, link_id: linkId };
@@ -286,7 +302,7 @@ async function handleBulkRedirects(body: any) {
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'bulk_redirects', count: imported, site: extractSite(body) } as any,
+    request_payload: { tipo: 'bulk_redirects', saved: true, count: imported, total: redirects.length, skipped: redirects.length - imported, site: extractSite(body) } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, imported };
@@ -318,12 +334,20 @@ async function handleBulkWebhooks(body: any) {
   }));
 
   const { error } = await client.from('integration_logs').insert(rows);
-  if (error) throw error;
+  if (error) {
+    await client.from('integration_logs').insert({
+      integration: 'slt',
+      status: 'error',
+      request_payload: { tipo: 'bulk_webhooks', saved: false, reason: error.message, code: error.code, table: 'integration_logs', total: rows.length } as any,
+      error_message: `${error.message} (${error.code || 'no-code'}) — bulk de ${rows.length} webhooks`,
+    }).then(() => {}, () => {});
+    throw error;
+  }
 
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'bulk_webhooks', count: rows.length } as any,
+    request_payload: { tipo: 'bulk_webhooks', saved: true, count: rows.length } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, imported: rows.length };
@@ -350,11 +374,19 @@ export async function POST(req: Request) {
       const client = getSupabaseAdmin();
       if (!client) throw new Error('Supabase no configurado');
       const { error } = await client.from('events').insert(eventoRow(body as Record<string, unknown>));
-      if (error) throw error;
+      if (error) {
+        await client.from('integration_logs').insert({
+          integration: 'slt',
+          status: 'error',
+          request_payload: { tipo: 'wli_tracking', saved: false, reason: error.message, code: error.code, table: 'events', user_email: (body as any).user_email, session_id: (body as any).session_id, site: extractSite(body) } as any,
+          error_message: `${error.message} (${error.code || 'no-code'}) — wli_tracking`,
+        }).then(() => {}, () => {});
+        throw error;
+      }
       await client.from('integration_logs').insert({
         integration: 'slt',
         status: 'success',
-        request_payload: { tipo: 'wli_tracking', user_email: (body as any).user_email, site: extractSite(body) } as any,
+        request_payload: { tipo: 'wli_tracking', saved: true, user_email: (body as any).user_email, session_id: (body as any).session_id, site: extractSite(body) } as any,
       }).then(() => {}, () => {});
       return jsonRes({ ok: true, mode: 'wli_tracking' });
     }
@@ -396,7 +428,7 @@ export async function POST(req: Request) {
           await client.from('integration_logs').insert({
             integration: 'slt',
             status: 'success',
-            request_payload: { tipo: 'test_connection', source: 'wordpress', site: extractSite(body) },
+            request_payload: { tipo: 'test_connection', saved: true, source: 'wordpress', site: extractSite(body) },
           }).then(() => {}, () => {});
         }
         return jsonRes({ ok: true, message: 'Conexión exitosa con wlo-slt', timestamp: new Date().toISOString() });
