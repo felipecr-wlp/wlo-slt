@@ -34,6 +34,11 @@ export default function ImportsPage() {
 
   useEffect(() => { load(); }, [filter, page]);
 
+  const getSite = (log: LogEntry): string => {
+    const p = log.request_payload as any;
+    return p?.site || '-';
+  };
+
   const getTipo = (log: LogEntry): string => {
     const p = log.request_payload as any;
     return p?.tipo || p?.event || p?._normalized?.eventType || log.integration;
@@ -42,9 +47,13 @@ export default function ImportsPage() {
   const getResumen = (log: LogEntry): string => {
     const p = log.request_payload as any;
     if (p?.tipo === 'evento') return p?.user_email || p?.user_name || p?.url_pagina || '-';
+    if (p?.tipo === 'bulk_eventos') return `${p?.count || 0} eventos`;
+    if (p?.tipo === 'bulk_redirects') return `${p?.count || 0} redirects`;
+    if (p?.tipo === 'bulk_webhooks') return `${p?.count || 0} webhooks`;
     if (p?.tipo === 'redirect') return `/${p?.slug || ''} → ${p?.destino || ''}`;
     if (p?.tipo === 'webhook') return p?.source || '-';
     if (p?.tipo === 'test_connection') return 'Test OK';
+    if (p?.tipo === 'wli_tracking') return p?.user_email || '-';
     if (p?.source === 'wordpress') return p?.fields?.email || p?.fields?.name || '-';
     return p?.email || p?.name || '-';
   };
@@ -84,6 +93,9 @@ export default function ImportsPage() {
                         {log.status}
                       </Badge>
                       <Badge variant="outline">{getTipo(log)}</Badge>
+                      {getSite(log) !== '-' && (
+                        <Badge variant="secondary" className="font-mono text-xs">{getSite(log)}</Badge>
+                      )}
                       <span className="text-xs text-gray-500">{log.integration}</span>
                     </div>
                     <p className="text-sm truncate">{getResumen(log)}</p>

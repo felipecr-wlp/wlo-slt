@@ -158,10 +158,18 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'evento', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score } as any,
+    request_payload: { tipo: 'evento', user_email: data.user_email, user_name: data.user_name, url_pagina: data.url_pagina, score: data.score, site: extractSite(data) } as any,
   }).then(() => {}, () => {});
 
   return { ok: true };
+}
+
+function extractSite(body: any): string {
+  try {
+    const url = body?.url_pagina || body?.events?.[0]?.url_pagina || body?.redirects?.[0]?.destino || body?.payload?.url || '';
+    if (url) return new URL(url).hostname;
+  } catch {}
+  return body?.site_id || body?.source || '-';
 }
 
 async function handleBulkEventos(body: any) {
@@ -176,7 +184,7 @@ async function handleBulkEventos(body: any) {
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'bulk_eventos', count: rows.length } as any,
+    request_payload: { tipo: 'bulk_eventos', count: rows.length, site: extractSite(body) } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, imported: inserted?.length || rows.length };
@@ -278,7 +286,7 @@ async function handleBulkRedirects(body: any) {
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
-    request_payload: { tipo: 'bulk_redirects', count: imported } as any,
+    request_payload: { tipo: 'bulk_redirects', count: imported, site: extractSite(body) } as any,
   }).then(() => {}, () => {});
 
   return { ok: true, imported };
@@ -346,7 +354,7 @@ export async function POST(req: Request) {
       await client.from('integration_logs').insert({
         integration: 'slt',
         status: 'success',
-        request_payload: { tipo: 'wli_tracking', user_email: (body as any).user_email } as any,
+        request_payload: { tipo: 'wli_tracking', user_email: (body as any).user_email, site: extractSite(body) } as any,
       }).then(() => {}, () => {});
       return jsonRes({ ok: true, mode: 'wli_tracking' });
     }
@@ -388,7 +396,7 @@ export async function POST(req: Request) {
           await client.from('integration_logs').insert({
             integration: 'slt',
             status: 'success',
-            request_payload: { tipo: 'test_connection', source: 'wordpress' },
+            request_payload: { tipo: 'test_connection', source: 'wordpress', site: extractSite(body) },
           }).then(() => {}, () => {});
         }
         return jsonRes({ ok: true, message: 'Conexión exitosa con wlo-slt', timestamp: new Date().toISOString() });
