@@ -1,10 +1,11 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 const MAX_LOGS = 200;
+const noCache = { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' };
 
 export async function GET(req: Request) {
   const client = getSupabaseAdmin();
-  if (!client) return Response.json({ error: 'Supabase no configurado' }, { status: 500 });
+  if (!client) return Response.json({ error: 'Supabase no configurado' }, { status: 500, headers: noCache });
 
   const { searchParams } = new URL(req.url);
   const limit = Number(searchParams.get('limit') || '50');
@@ -45,6 +46,6 @@ export async function GET(req: Request) {
   }
 
   const { data, error } = await q;
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json(data ?? []);
+  if (error) return Response.json({ error: error.message }, { status: 500, headers: noCache });
+  return Response.json(data ?? [], { headers: noCache });
 }

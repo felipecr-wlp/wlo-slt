@@ -2,6 +2,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
+const noCache = { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' };
+
 export async function GET() {
   const client = getSupabaseAdmin();
   if (!client) return Response.json({ error: 'Supabase no configurado' });
@@ -29,5 +31,5 @@ export async function GET() {
   return Response.json({
     tables: results,
     events_query: { data: evTest ?? [], error: evErr?.message ?? null },
-  }, { headers: { 'Content-Type': 'application/json' } });
+  }, { headers: { 'Content-Type': 'application/json', ...noCache } });
 }
