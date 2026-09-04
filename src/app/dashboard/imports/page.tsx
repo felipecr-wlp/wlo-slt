@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-const TABLES = ['events', 'sessions', 'form_submissions', 'short_links', 'forms', 'ip_rules', 'integration_logs', 'redirect_clicks'];
-
 interface LogEntry {
   id: string;
   integration: string;
@@ -21,7 +19,6 @@ export default function ImportsPage() {
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [cleanTable, setCleanTable] = useState('integration_logs');
   const [confirmClean, setConfirmClean] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const limit = 50;
@@ -45,10 +42,10 @@ export default function ImportsPage() {
     setConfirmClean(false);
     setCleaning(true);
     try {
-      const r = await fetch(`/api/dashboard/data?action=clear&table=${cleanTable}`, { method: 'POST' });
+      const r = await fetch('/api/dashboard/data?action=clear&table=integration_logs', { method: 'POST' });
       const data = await r.json();
       if (r.ok) {
-        alert(`Limpiado: ${data.count} fila(s) de ${cleanTable}`);
+        alert(`Limpiado: ${data.count} registro(s) de importación`);
         load();
       } else {
         alert(`Error: ${data.message || 'No se pudo limpiar'}`);
@@ -113,29 +110,22 @@ export default function ImportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Limpiar base de datos</CardTitle>
+          <CardTitle>Limpiar registros de importación</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700">Tabla</label>
-              <select value={cleanTable} onChange={(e) => setCleanTable(e.target.value)} className="w-full border rounded p-2 text-gray-900 bg-white mt-1">
-                {TABLES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            {confirmClean ? (
-              <div className="flex gap-2">
-                <Button variant="destructive" onClick={doClean} disabled={cleaning}>
-                  {cleaning ? 'Limpiando...' : 'Confirmar limpieza'}
-                </Button>
-                <Button variant="outline" onClick={() => setConfirmClean(false)}>Cancelar</Button>
-              </div>
-            ) : (
-              <Button variant="destructive" onClick={() => setConfirmClean(true)} disabled={cleaning}>
-                Limpiar tabla
+          <p className="text-sm text-gray-500 mb-3">Elimina todos los registros del activity log. No afecta eventos, redirects ni otros datos.</p>
+          {confirmClean ? (
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={doClean} disabled={cleaning}>
+                {cleaning ? 'Limpiando...' : 'Confirmar limpieza'}
               </Button>
-            )}
-          </div>
+              <Button variant="outline" onClick={() => setConfirmClean(false)}>Cancelar</Button>
+            </div>
+          ) : (
+            <Button variant="destructive" onClick={() => setConfirmClean(true)} disabled={cleaning}>
+              Limpiar importaciones
+            </Button>
+          )}
         </CardContent>
       </Card>
 
