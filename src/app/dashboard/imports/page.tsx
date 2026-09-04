@@ -15,6 +15,7 @@ interface LogEntry {
 
 export default function ImportsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(0);
@@ -31,7 +32,8 @@ export default function ImportsPage() {
     const r = await fetch(`/api/logs?${params}`);
     if (r.ok) {
       const d = await r.json();
-      setLogs(d);
+      setLogs(d.data);
+      setTotal(d.total);
     }
     setLoading(false);
   };
@@ -113,7 +115,9 @@ export default function ImportsPage() {
           <CardTitle>Limpiar registros de importación</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500 mb-3">Elimina todos los registros del activity log. No afecta eventos, redirects ni otros datos.</p>
+          <p className="text-sm text-gray-500 mb-3">
+            Total de registros: <strong>{total}</strong>. Elimina todos los registros del activity log. No afecta eventos, redirects ni otros datos.
+          </p>
           {confirmClean ? (
             <div className="flex gap-2">
               <Button variant="destructive" onClick={doClean} disabled={cleaning}>

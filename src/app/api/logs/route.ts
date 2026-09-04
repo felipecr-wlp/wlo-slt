@@ -14,16 +14,16 @@ export async function GET(req: Request) {
   const exclude = searchParams.get('exclude');
 
   // Auto-limpiar si hay más de MAX_LOGS registros
-  const { count } = await client
+  const { count: totalCount } = await client
     .from('integration_logs')
     .select('*', { count: 'exact', head: true });
 
-  if ((count ?? 0) > MAX_LOGS) {
+  if ((totalCount ?? 0) > MAX_LOGS) {
     const { data: old } = await client
       .from('integration_logs')
       .select('id')
       .order('created_at', { ascending: true })
-      .limit((count ?? 0) - MAX_LOGS);
+      .limit((totalCount ?? 0) - MAX_LOGS);
     if (old?.length) {
       const ids = old.map((r: { id: string }) => r.id);
       await client.from('integration_logs').delete().in('id', ids);
@@ -47,5 +47,5 @@ export async function GET(req: Request) {
 
   const { data, error } = await q;
   if (error) return Response.json({ error: error.message }, { status: 500, headers: noCache });
-  return Response.json(data ?? [], { headers: noCache });
+  return Response.json({ data: data ?? [], total: totalCount ?? 0 }, { headers: noCache });
 }
