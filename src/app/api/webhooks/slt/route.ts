@@ -163,6 +163,21 @@ async function handleEvento(data: z.infer<typeof eventoSchema>) {
     throw error;
   }
 
+  // Also write to slt_eventos for analytics
+  await client.from('slt_eventos').insert({
+    url_pagina: data.url_pagina || 'unknown',
+    elemento_id: data.elemento_id || 'Entrada',
+    session_id: data.session_id || 'unknown',
+    user_name: data.user_name || null,
+    user_email: data.user_email || null,
+    user_phone: data.user_phone || null,
+    user_ip: data.user_ip || null,
+    fingerprint: data.fingerprint || null,
+    user_profile: data.user_profile || null,
+    observaciones: data.observaciones || null,
+    fecha: data.timestamp || new Date().toISOString(),
+  }).then(() => {}, () => {});
+
   await client.from('integration_logs').insert({
     integration: 'slt',
     status: 'success',
@@ -196,6 +211,22 @@ async function handleBulkEventos(body: any) {
     }).then(() => {}, () => {});
     throw error;
   }
+
+  // Also write to slt_eventos for analytics
+  const sltRows = events.map((e: any) => ({
+    url_pagina: e.url_pagina || 'unknown',
+    elemento_id: e.elemento_id || 'Entrada',
+    session_id: e.session_id || 'unknown',
+    user_name: e.user_name || null,
+    user_email: e.user_email || null,
+    user_phone: e.user_phone || null,
+    user_ip: e.user_ip || null,
+    fingerprint: e.fingerprint || null,
+    user_profile: e.user_profile || null,
+    observaciones: e.observaciones || null,
+    fecha: e.timestamp || new Date().toISOString(),
+  }));
+  await client.from('slt_eventos').insert(sltRows).then(() => {}, () => {});
 
   await client.from('integration_logs').insert({
     integration: 'slt',
@@ -381,20 +412,35 @@ export async function POST(req: Request) {
     if (!tipo && (body as any)?.url_pagina) {
       const client = getSupabaseAdmin();
       if (!client) throw new Error('Supabase no configurado');
+      const b = body as any;
       const { error } = await client.from('events').insert(eventoRow(body as Record<string, unknown>));
       if (error) {
         await client.from('integration_logs').insert({
           integration: 'slt',
           status: 'error',
-          request_payload: { tipo: 'wli_tracking', saved: false, reason: error.message, code: error.code, table: 'events', user_email: (body as any).user_email, session_id: (body as any).session_id, site: extractSite(body) } as any,
+          request_payload: { tipo: 'wli_tracking', saved: false, reason: error.message, code: error.code, table: 'events', user_email: b.user_email, session_id: b.session_id, site: extractSite(body) } as any,
           error_message: `${error.message} (${error.code || 'no-code'}) — wli_tracking`,
         }).then(() => {}, () => {});
         throw error;
       }
+      // Also write to slt_eventos for analytics
+      await client.from('slt_eventos').insert({
+        url_pagina: b.url_pagina || 'unknown',
+        elemento_id: b.elemento_id || 'Entrada',
+        session_id: b.session_id || 'unknown',
+        user_name: b.user_name || null,
+        user_email: b.user_email || null,
+        user_phone: b.user_phone || null,
+        user_ip: b.user_ip || null,
+        fingerprint: b.fingerprint || null,
+        user_profile: b.user_profile || null,
+        observaciones: b.observaciones || null,
+        fecha: b.timestamp || new Date().toISOString(),
+      }).then(() => {}, () => {});
       await client.from('integration_logs').insert({
         integration: 'slt',
         status: 'success',
-        request_payload: { tipo: 'wli_tracking', saved: true, user_email: (body as any).user_email, session_id: (body as any).session_id, site: extractSite(body) } as any,
+        request_payload: { tipo: 'wli_tracking', saved: true, user_email: b.user_email, session_id: b.session_id, site: extractSite(body) } as any,
       }).then(() => {}, () => {});
       return jsonRes({ ok: true, mode: 'wli_tracking' });
     }

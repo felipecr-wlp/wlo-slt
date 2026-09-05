@@ -3,9 +3,9 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_FOLDERS = [
-  { id: '1', name: 'Campaña Principal', color: '#2271b1', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 0 },
-  { id: '2', name: 'Landing Pages', color: '#00a32a', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 1 },
-  { id: '3', name: 'Gracias / Conversión', color: '#d63638', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 2 },
+  { name: 'Campaña Principal', color: '#2271b1', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 0 },
+  { name: 'Landing Pages', color: '#00a32a', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 1 },
+  { name: 'Gracias / Conversión', color: '#d63638', launch_date: new Date().toISOString().split('T')[0], urls: [], sort_order: 2 },
 ];
 
 export async function GET() {
@@ -17,13 +17,14 @@ export async function GET() {
     .select('*')
     .order('sort_order', { ascending: true });
 
-  if (error) return Response.json({ folders: DEFAULT_FOLDERS });
+  if (error) return Response.json({ folders: DEFAULT_FOLDERS, error: error.message });
 
   if (!data || data.length === 0) {
-    const { data: inserted } = await client
+    const { data: inserted, error: insErr } = await client
       .from('slt_folders')
-      .insert(DEFAULT_FOLDERS.map((f) => ({ name: f.name, color: f.color, launch_date: f.launch_date, urls: f.urls })))
+      .insert(DEFAULT_FOLDERS)
       .select();
+    if (insErr) return Response.json({ folders: DEFAULT_FOLDERS, error: insErr.message });
     return Response.json({ folders: inserted || DEFAULT_FOLDERS });
   }
 
@@ -36,8 +37,12 @@ export async function PUT(req: Request) {
 
   const { folders } = await req.json();
 
-  // Delete all and re-insert
-  await client.from('slt_folders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  // Get all existing IDs and delete them
+  const { data: existing } = await client.from('slt_folders').select('id');
+  if (existing?.length) {
+    const ids = existing.map((r: any) => r.id);
+    await client.from('slt_folders').delete().in('id', ids);
+  }
 
   const rows = folders.map((f: any, i: number) => ({
     name: f.name,
