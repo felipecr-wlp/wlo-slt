@@ -112,6 +112,7 @@ export interface EventRow {
   country?: string;
   city?: string;
   device_type?: string;
+  payload?: Record<string, unknown>;
   created_at: string;
 }
 
