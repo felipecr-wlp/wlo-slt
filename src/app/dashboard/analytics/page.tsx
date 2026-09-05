@@ -56,6 +56,7 @@ export default function AnalyticsPage() {
   const [openFolders, setOpenFolders] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
   const [configFolders, setConfigFolders] = useState<Folder[]>([]);
 
   // Read URL params
@@ -171,8 +172,19 @@ export default function AnalyticsPage() {
   // Save folders
   const saveFolders = async () => {
     setSaving(true);
-    await fetch('/api/folders', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folders: configFolders }) });
-    await loadFolders();
+    setSaveMsg('');
+    try {
+      const r = await fetch('/api/folders', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folders: configFolders }) });
+      const d = await r.json();
+      if (!r.ok || d.error) {
+        setSaveMsg('❌ Error: ' + (d.error || 'Error desconocido'));
+      } else {
+        setSaveMsg('✅ Guardado: ' + (d.count || 0) + ' carpeta(s)');
+        await loadFolders();
+      }
+    } catch (e: any) {
+      setSaveMsg('❌ Error de red: ' + e.message);
+    }
     setSaving(false);
   };
 
@@ -286,9 +298,10 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             ))}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Button variant="outline" onClick={addFolder}>+ Nueva Carpeta</Button>
               <Button onClick={saveFolders} disabled={saving}>{saving ? 'Guardando...' : '💾 Guardar Cambios'}</Button>
+              {saveMsg && <span className="text-sm">{saveMsg}</span>}
             </div>
           </CardContent>
         </Card>
