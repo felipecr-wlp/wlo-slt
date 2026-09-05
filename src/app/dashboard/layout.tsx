@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 
 const nav = [
   { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Analytics', href: '/dashboard/analytics' },
   { label: 'Eventos', href: '/dashboard/events' },
   { label: 'Formularios', href: '/dashboard/forms' },
   { label: 'Redirects', href: '/dashboard/redirects' },
