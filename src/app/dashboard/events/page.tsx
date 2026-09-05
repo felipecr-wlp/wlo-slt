@@ -47,8 +47,9 @@ export default function EventsPage() {
         const p = e.payload as any;
         const haystack = [
           e.url, e.event_type, e.element_id, e.session_id, e.device_type,
+          e.country, e.city, e.browser, e.os, e.referrer,
           p?.user_email, p?.user_name, p?.user_phone, p?.observaciones,
-          p?.session_id, p?.source, p?.site, p?.fingerprint,
+          p?.session_id, p?.source, p?.site, p?.fingerprint, p?.persona,
         ].filter(Boolean).join(' ').toLowerCase();
         return haystack.includes(q);
       });
@@ -153,35 +154,50 @@ export default function EventsPage() {
                     <th className="px-3 py-2 text-left font-medium">URL</th>
                     <th className="px-3 py-2 text-left font-medium">Elemento</th>
                     <th className="px-3 py-2 text-left font-medium">Dispositivo</th>
+                    <th className="px-3 py-2 text-left font-medium">Ubicación</th>
                     <th className="px-3 py-2 text-left font-medium">Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paged.map((e) => (
-                    <>
-                      <tr key={e.id} className="border-b cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(expanded === e.id ? null : e.id)}>
-                        <td className="px-3 py-2">
-                          <Badge variant="outline">{e.event_type}</Badge>
-                        </td>
-                        <td className="px-3 py-2 max-w-xs truncate">{e.url}</td>
-                        <td className="px-3 py-2">{e.element_id || '-'}</td>
-                        <td className="px-3 py-2">{e.device_type || '-'}</td>
-                        <td className="px-3 py-2 text-gray-500">
-                          {new Date(e.created_at).toLocaleString('es-MX')}
-                        </td>
-                      </tr>
-                      {expanded === e.id && (
-                        <tr key={`${e.id}-payload`}>
-                          <td colSpan={5} className="px-3 py-2 bg-gray-50">
-                            <p className="text-xs font-medium text-gray-500 mb-1">Payload completo:</p>
-                            <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap break-all max-h-64 overflow-auto">
-                              {JSON.stringify(e.payload || e, null, 2)}
-                            </pre>
+                  {paged.map((e) => {
+                    const p = e.payload as any;
+                    return (
+                      <>
+                        <tr key={e.id} className="border-b cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(expanded === e.id ? null : e.id)}>
+                          <td className="px-3 py-2">
+                            <Badge variant="outline">{e.event_type}</Badge>
+                          </td>
+                          <td className="px-3 py-2 max-w-xs truncate">{e.url}</td>
+                          <td className="px-3 py-2">{e.element_id || '-'}</td>
+                          <td className="px-3 py-2">{e.device_type || '-'}</td>
+                          <td className="px-3 py-2 text-gray-500">{[e.country, e.city].filter(Boolean).join(', ') || '-'}</td>
+                          <td className="px-3 py-2 text-gray-500">
+                            {new Date(e.created_at).toLocaleString('es-MX')}
                           </td>
                         </tr>
-                      )}
-                    </>
-                  ))}
+                        {expanded === e.id && (
+                          <tr key={`${e.id}-payload`}>
+                            <td colSpan={6} className="px-3 py-2 bg-gray-50">
+                              <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                                {p?.user_name && <span><strong>Nombre:</strong> {p.user_name}</span>}
+                                {p?.user_email && <span><strong>Email:</strong> {p.user_email}</span>}
+                                {p?.user_phone && <span><strong>Teléfono:</strong> {p.user_phone}</span>}
+                                {p?.persona && <span><strong>Persona:</strong> {p.persona}</span>}
+                                {p?.score != null && <span><strong>Score:</strong> {p.score}</span>}
+                                {p?.observaciones && <span><strong>Obs:</strong> {p.observaciones}</span>}
+                                {e.fingerprint && <span><strong>Fingerprint:</strong> {e.fingerprint}</span>}
+                                {e.referrer && <span><strong>Referrer:</strong> {e.referrer}</span>}
+                              </div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Payload completo:</p>
+                              <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap break-all max-h-64 overflow-auto">
+                                {JSON.stringify(e.payload || e, null, 2)}
+                              </pre>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

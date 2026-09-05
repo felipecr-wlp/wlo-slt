@@ -112,6 +112,9 @@ export interface EventRow {
   country?: string;
   city?: string;
   device_type?: string;
+  browser?: string;
+  os?: string;
+  fingerprint?: string;
   payload?: Record<string, unknown>;
   created_at: string;
 }
