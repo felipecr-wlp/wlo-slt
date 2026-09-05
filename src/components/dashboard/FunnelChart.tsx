@@ -12,8 +12,8 @@ interface FunnelData {
 export function FunnelChart() {
   const [data, setData] = useState<FunnelData[]>([]);
 
-  useEffect(() => {
-    fetch('/api/dashboard/funnels')
+  const load = () => {
+    fetch('/api/dashboard/funnels', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => {
         if (d.funnels?.length) {
@@ -26,6 +26,12 @@ export function FunnelChart() {
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   if (data.length === 0) {

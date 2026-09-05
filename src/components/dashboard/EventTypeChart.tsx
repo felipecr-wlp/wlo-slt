@@ -9,8 +9,8 @@ interface TypeCount { name: string; value: number }
 export function EventTypeChart() {
   const [data, setData] = useState<TypeCount[]>([]);
 
-  useEffect(() => {
-    fetch('/api/dashboard/events')
+  const load = () => {
+    fetch('/api/dashboard/events', { cache: 'no-store' })
       .then((r) => r.json())
       .then((events: any[]) => {
         const map = new Map<string, number>();
@@ -21,6 +21,12 @@ export function EventTypeChart() {
         setData(Array.from(map.entries()).map(([name, value]) => ({ name, value })));
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   if (data.length === 0) {
