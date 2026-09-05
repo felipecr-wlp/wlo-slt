@@ -1,5 +1,7 @@
 import { searchEvents, clearDataTable, exportTable, importRows, toCsv } from '@/lib/data';
 
+export const dynamic = 'force-dynamic';
+
 const noCache = { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' };
 
 export async function GET(req: Request) {

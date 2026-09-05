@@ -1,6 +1,8 @@
 import { getEvents } from '@/lib/data';
 import { getRecentEvents } from '@/lib/ingestBuffer';
 
+export const dynamic = 'force-dynamic';
+
 const noCache = { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' };
 
 export async function GET(req: Request) {

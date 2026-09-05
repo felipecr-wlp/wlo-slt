@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+
 const MAX_LOGS = 200;
 const noCache = { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' };
 
